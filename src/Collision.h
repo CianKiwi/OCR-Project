@@ -8,6 +8,7 @@ struct directionBool{
 	bool right;
 };
 
+//NOTE: while SDL does have SDL_FRect, a pure c++ version is more portable to other frameworks
 class Collider{
 public:
 	double x;

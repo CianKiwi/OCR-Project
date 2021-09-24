@@ -11,6 +11,7 @@ struct Keybinds{
 
 class Player{
 private:
+	//NOTE: storing position twice is bad. remove this and just use hitbox position
 	double X;
 	double Y;
 public:
@@ -20,6 +21,7 @@ public:
 	double speed;
 	Collider hitbox;
 	Keybinds binds;
+	//NOTE: moveRestrictions may be useless depending on implementation of collision
 	directionBool moveRestrictions;
 	
 	Player(double i_x, double i_y, double i_speed, Collider i_hitbox, Keybinds i_keybinds);

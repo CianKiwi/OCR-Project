@@ -128,13 +128,13 @@ int main(){
 		for (int x = 0; x < firstRoom.walls.size(); x++){
 			SDL_SetRenderDrawColor(rend, sin(firstRoom.walls[x].x*firstRoom.walls[x].y)*255, sin(firstRoom.walls[x].y/firstRoom.walls[x].x)*255, 128, 200);
 			SDL_Rect rect = {(int)firstRoom.walls[x].x, (int)firstRoom.walls[x].y, (int)firstRoom.walls[x].width, (int)firstRoom.walls[x].height};
-			SDL_RenderDrawRect(rend, &rect);
+			SDL_RenderFillRect(rend, &rect);
 		}
 		//render door colliders (for debug)
 		for (Collider c : firstRoom.doors){
 			SDL_SetRenderDrawColor(rend, 255, 255, 255, 200);
 			SDL_Rect rect = {(int)c.x, (int)c.y, (int)c.width, (int)c.height};
-			SDL_RenderDrawRect(rend, &rect);
+			SDL_RenderFillRect(rend, &rect);
 		}
 		SDL_SetRenderDrawBlendMode(rend, SDL_BLENDMODE_NONE);
 		

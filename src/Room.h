@@ -21,6 +21,7 @@ public:
 	tile tilemap[16][16] = {0,0};
 	std::vector<Collider> walls;
 	Collider doors[4];
+	//NOTE: will implement neighbour rooms when i've learnt more about graphs
 	//Room* neighbours[4];
 	
 	Room(const char* i_source, Tileset* i_tileset, double start_x, double start_y);
