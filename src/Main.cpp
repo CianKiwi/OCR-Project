@@ -15,6 +15,8 @@
 SDL_Window* window;
 SDL_Renderer* rend;
 
+bool DEBUG = true;
+
 int main(){
 	/*BOILERPLATE*/
 	SDL_Init(SDL_INIT_VIDEO);
@@ -30,7 +32,7 @@ int main(){
 	Tileset dungeonSet("tex/myTestTileset.png", 16, 16);
 	SDL_Texture* dungeonSetTex;
 	dungeonSetTex = SDL_CreateTextureFromSurface(rend, dungeonSet.atlas);
-	Room firstRoom("room1.txt", &dungeonSet, WINDOW_X/2, WINDOW_Y/2);
+	Room firstRoom("room3.txt", &dungeonSet, WINDOW_X/2, WINDOW_Y/2);
 	//Room secondRoom(&dungeonSet);
 	SDL_Texture* gameView;
 	SDL_Texture* roomTex;
@@ -96,6 +98,11 @@ int main(){
 			if (e.type == SDL_QUIT){
 				quit = true;
 			}
+			else if(e.type == SDL_KEYDOWN){
+				if(e.key.keysym.sym == 'h'){
+					DEBUG = !DEBUG; //flip on or off
+				}
+			}
 		}
 		if(quit) break;
 		
@@ -122,21 +129,23 @@ int main(){
 		SDL_SetRenderDrawColor(rend, 255, 196, 196, 255);
 		SDL_RenderFillRect(rend, &playerRect);
 		
-		
-		//render colliders (for debug)
-		SDL_SetRenderDrawBlendMode(rend, SDL_BLENDMODE_BLEND);
-		for (int x = 0; x < firstRoom.walls.size(); x++){
-			SDL_SetRenderDrawColor(rend, sin(firstRoom.walls[x].x*firstRoom.walls[x].y)*255, sin(firstRoom.walls[x].y/firstRoom.walls[x].x)*255, 128, 200);
-			SDL_Rect rect = {(int)firstRoom.walls[x].x, (int)firstRoom.walls[x].y, (int)firstRoom.walls[x].width, (int)firstRoom.walls[x].height};
-			SDL_RenderFillRect(rend, &rect);
+		if(DEBUG){
+			//render colliders (for debug)
+			SDL_SetRenderDrawBlendMode(rend, SDL_BLENDMODE_BLEND);
+			for (int x = 0; x < firstRoom.walls.size(); x++){
+				SDL_SetRenderDrawColor(rend, sin(firstRoom.walls[x].x*firstRoom.walls[x].y)*255, sin(firstRoom.walls[x].y/firstRoom.walls[x].x)*255, 128, 200);
+				SDL_Rect rect = {(int)firstRoom.walls[x].x, (int)firstRoom.walls[x].y, (int)firstRoom.walls[x].width, (int)firstRoom.walls[x].height};
+				SDL_RenderFillRect(rend, &rect);
+			}
+
+			//render door colliders (for debug)
+			for (Collider c : firstRoom.doors){
+				SDL_SetRenderDrawColor(rend, 255, 255, 255, 200);
+				SDL_Rect rect = {(int)c.x, (int)c.y, (int)c.width, (int)c.height};
+				SDL_RenderFillRect(rend, &rect);
+			}
+			SDL_SetRenderDrawBlendMode(rend, SDL_BLENDMODE_NONE);
 		}
-		//render door colliders (for debug)
-		for (Collider c : firstRoom.doors){
-			SDL_SetRenderDrawColor(rend, 255, 255, 255, 200);
-			SDL_Rect rect = {(int)c.x, (int)c.y, (int)c.width, (int)c.height};
-			SDL_RenderFillRect(rend, &rect);
-		}
-		SDL_SetRenderDrawBlendMode(rend, SDL_BLENDMODE_NONE);
 		
 		SDL_RenderPresent(rend);
 		
