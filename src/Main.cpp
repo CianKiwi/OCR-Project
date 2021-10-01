@@ -48,7 +48,7 @@ int main(){
 	camera.set_pos(player.x + player.hitbox.width/2, player.y + player.hitbox.height);
 	
 	
-	
+	//setup graphics
 	gameView = SDL_CreateTexture(rend, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, camera.view.w + 16 * TILE_DIM_X, camera.view.h + 16 * TILE_DIM_Y);
 	//render the room to a texture to save on computations later
 	roomTex = SDL_CreateTexture(rend, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, camera.view.w + 16 * TILE_DIM_X, camera.view.h + 16 * TILE_DIM_Y);
