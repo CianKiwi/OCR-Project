@@ -39,13 +39,12 @@ int main(){
 	
 	
 	//player stuff
-	Collider hitbox(0, 0, 32, 48);
+	Collider hitbox({0, 0}, {32, 48});
 	Keybinds keys{SDL_SCANCODE_W, SDL_SCANCODE_S, SDL_SCANCODE_A, SDL_SCANCODE_D};
 	Camera camera(0, 0, WINDOW_X, WINDOW_Y);
-	Player player(0, 0, 1.5f, hitbox, keys);
-	player.moveRestrictions = {false, false, false, false};
-	player.set_pos(1130, 720);
-	camera.set_pos(player.x + player.hitbox.width/2, player.y + player.hitbox.height);
+	Player player(hitbox, keys, 3.0f);
+	player.hitbox.pos = {1130, 720};
+	camera.set_pos(player.hitbox.pos.x + player.hitbox.dim.x/2, player.hitbox.pos.y + player.hitbox.dim.y);
 	
 	
 	//setup graphics
@@ -78,17 +77,9 @@ int main(){
 		deltaTime = (double)((NOW - LAST)*100 / (double)SDL_GetPerformanceFrequency());
 		
 		/*--Collision--*/
-		CollisionData data;
-		player.moveRestrictions = {false,false,false,false};
-		for (int x = 0; x < firstRoom.walls.size(); x++){
-			data = check_collision(&player.hitbox, &firstRoom.walls[x]);
-			if (data.collision){
-				/*do some funky stuff*/
-				std::cout << "COLLISION" << std::endl;
-				player.moveRestrictions.up |= data.direction.up;
-				player.moveRestrictions.down |= data.direction.down;
-				player.moveRestrictions.left |= data.direction.left;
-				player.moveRestrictions.right |= data.direction.right;
+		for (Uint64 x = 0; x < firstRoom.walls.size(); x++){
+			if(check_collision(&player.hitbox, &firstRoom.walls[x])){
+				std::cout << "COLLISION!" << std::endl;
 			}
 		}
 		
@@ -101,6 +92,7 @@ int main(){
 			else if(e.type == SDL_KEYDOWN){
 				if(e.key.keysym.sym == 'h'){
 					DEBUG = !DEBUG; //flip on or off
+					std::cout << "DEBUG: " << (DEBUG ? "ON" : "OFF") << std::endl;
 				}
 			}
 		}
@@ -112,36 +104,37 @@ int main(){
 		const Uint8* keys = SDL_GetKeyboardState(0); 
 
 		//movement (normalised)
-		double playerXmov = (keys[player.binds.left] ? -1 : 0) + (keys[player.binds.right] ? 1 : 0);
-		double playerYmov = (keys[player.binds.up] ? -1 : 0) + (keys[player.binds.down] ? 1 : 0);
+		double playerXmov = (keys[SDL_GetScancodeFromKey(player.binds.left)] ? -1 : 0) + (keys[SDL_GetScancodeFromKey(player.binds.right)] ? 1 : 0);
+		double playerYmov = (keys[SDL_GetScancodeFromKey(player.binds.up)] ? -1 : 0) + (keys[SDL_GetScancodeFromKey(player.binds.down)] ? 1 : 0);
 		double playerMovMagnitude = sqrt(playerXmov * playerXmov + playerYmov * playerYmov); //pythagoras
-		player.move(playerXmov * player.speed * deltaTime / playerMovMagnitude, playerYmov * player.speed * deltaTime / playerMovMagnitude);
+		player.hitbox.pos.x += playerXmov * player.moveSpeed * deltaTime / playerMovMagnitude;
+		player.hitbox.pos.y += playerYmov * player.moveSpeed * deltaTime / playerMovMagnitude;;
 		
 		//Other Variables
-		camera.set_pos(player.x + player.hitbox.width/2, player.y + player.hitbox.height/2);
+		camera.set_pos(player.hitbox.pos.x + player.hitbox.dim.x/2, player.hitbox.pos.y + player.hitbox.dim.y/2);
 		
 		//Render to game view
 		SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
 		SDL_SetRenderTarget(rend, gameView);
 		SDL_RenderClear(rend);
 		SDL_RenderCopy(rend, roomTex, 0, 0);
-		SDL_Rect playerRect = {(int)player.hitbox.x, (int)player.hitbox.y, (int)player.hitbox.width, (int)player.hitbox.height};
+		SDL_Rect playerRect = {(int)player.hitbox.pos.x, (int)player.hitbox.pos.y, (int)player.hitbox.dim.x, (int)player.hitbox.dim.y};
 		SDL_SetRenderDrawColor(rend, 255, 196, 196, 255);
 		SDL_RenderFillRect(rend, &playerRect);
 		
 		if(DEBUG){
 			//render colliders (for debug)
 			SDL_SetRenderDrawBlendMode(rend, SDL_BLENDMODE_BLEND);
-			for (int x = 0; x < firstRoom.walls.size(); x++){
-				SDL_SetRenderDrawColor(rend, sin(firstRoom.walls[x].x*firstRoom.walls[x].y)*255, sin(firstRoom.walls[x].y/firstRoom.walls[x].x)*255, 128, 200);
-				SDL_Rect rect = {(int)firstRoom.walls[x].x, (int)firstRoom.walls[x].y, (int)firstRoom.walls[x].width, (int)firstRoom.walls[x].height};
+			for (Uint64 x = 0; x < firstRoom.walls.size(); x++){
+				SDL_SetRenderDrawColor(rend, sin(firstRoom.walls[x].pos.x*firstRoom.walls[x].pos.y)*255, sin(firstRoom.walls[x].pos.y/firstRoom.walls[x].pos.x)*255, 128, 200);
+				SDL_Rect rect = {(int)firstRoom.walls[x].pos.x, (int)firstRoom.walls[x].pos.y, (int)firstRoom.walls[x].dim.x, (int)firstRoom.walls[x].dim.y};
 				SDL_RenderFillRect(rend, &rect);
 			}
 
 			//render door colliders (for debug)
 			for (Collider c : firstRoom.doors){
 				SDL_SetRenderDrawColor(rend, 255, 255, 255, 200);
-				SDL_Rect rect = {(int)c.x, (int)c.y, (int)c.width, (int)c.height};
+				SDL_Rect rect = {(int)c.pos.x, (int)c.pos.y, (int)c.dim.x, (int)c.dim.y};
 				SDL_RenderFillRect(rend, &rect);
 			}
 			SDL_SetRenderDrawBlendMode(rend, SDL_BLENDMODE_NONE);

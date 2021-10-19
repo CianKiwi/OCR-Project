@@ -7,7 +7,7 @@ Room::Room(const char* i_source, Tileset* i_tileset, double start_x, double star
 	std::ifstream roomSrc(i_source);
 	std::string line;
 	
-	Collider wallPiece(start_x, start_y, 0, TILE_DIM_Y);
+	Collider wallPiece({start_x, start_y}, {0, TILE_DIM_Y});
 	int doorIndex = 0;
 	//keeps track of current tile in tilemap
 	int tileCol = 0;
@@ -20,20 +20,20 @@ Room::Room(const char* i_source, Tileset* i_tileset, double start_x, double star
 		//if i is int, i get warnings (not fatal)
 		for (Uint64 i = 0; i < line.length(); i++){
 			if(line[i] == '#'){
-				if(wallPiece.width <= 0){
-					wallPiece.x = x;
+				if(wallPiece.dim.x <= 0){
+					wallPiece.pos.x = x;
 				}
 				//extend wall collider, set tilemap tile
-				wallPiece.width += TILE_DIM_X;
+				wallPiece.dim.x += TILE_DIM_X;
 				tilemap[tileCol][tileRow] = {1, 0};
 				tileCol++;
 			}
 			else{
-				if (wallPiece.width > 0){ //pushback wall and reset
+				if (wallPiece.dim.x > 0){ //pushback wall and reset
 					walls.push_back(wallPiece);
-					x += wallPiece.width;
-					wallPiece.width = 0;
-					wallPiece.x = x;
+					x += wallPiece.dim.x;
+					wallPiece.dim.x = 0;
+					wallPiece.pos.x = x;
 				}
 				//other cases
 				if(line[i] == '-'){
@@ -48,7 +48,7 @@ Room::Room(const char* i_source, Tileset* i_tileset, double start_x, double star
 				|| line[i] == 'W'){
 					//create door collider in array, set tilemap tile
 					if(doorIndex < 4){
-						Collider doorCollider(x, y, TILE_DIM_X, TILE_DIM_Y);
+						Collider doorCollider({x, y}, {TILE_DIM_X, TILE_DIM_Y});
 						doors[doorIndex] = doorCollider;
 						doorIndex++;
 						tilemap[tileCol][tileRow] = {1, 2};
@@ -66,8 +66,8 @@ Room::Room(const char* i_source, Tileset* i_tileset, double start_x, double star
 		}
 		y += TILE_DIM_Y;
 		x = start_x;
-		wallPiece.x = x;
-		wallPiece.y = y;
+		wallPiece.pos.x = x;
+		wallPiece.pos.y = y;
 		tileCol = 0;
 		tileRow++;
 	}

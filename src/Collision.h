@@ -1,37 +1,19 @@
 #pragma once
 #include <iostream>
 
-struct directionBool{
-	bool up;
-	bool down;
-	bool left;
-	bool right;
+struct Vec2{
+	double x;
+	double y;
 };
 
 //NOTE: while SDL does have SDL_FRect, a pure c++ version is more portable to other frameworks
 class Collider{
 public:
-	double x;
-	double y;
-	double width;
-	double height;
-	Collider(double i_x, double i_y, double i_width, double i_height);
+	Vec2 pos;
+	Vec2 dim;
+	Vec2 vel;
+	Collider(Vec2 position, Vec2 dimensions);
 	Collider();
-	void set_pos(double i_x, double i_y);
-	void move(double i_x, double i_y);
-	void print_data();
 };
 
-struct CollisionData{
-	bool collision;
-	Collider* a;
-	Collider* b;
-	//direction from a's overlapping side to b's nearest side
-	directionBool direction;
-	double overlap_x;
-	double overlap_y;
-};
-
-CollisionData check_collision(Collider* a, Collider* b);
-
-void print_collisionData(CollisionData data);
+bool check_collision(Collider* a, Collider* b);
