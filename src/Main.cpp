@@ -64,6 +64,17 @@ int main(){
 		}
 	}
 	
+	
+	/*DEBUGGING AND TEST CODE*/
+	/*
+	Collider c({10, 15},{60, 70});
+	RaycastData data = check_ray({9,15},{50,5},&c);
+	std::cout << data.contact << std::endl;
+	std::cout << data.contactPoint.x << "| " << data.contactPoint.y << std::endl;
+	std::cout << data.contactNormal.x << "| " << data.contactNormal.y << std::endl;
+	std::cout << data.contactTime << std::endl;
+	//*/
+	
 	/*GAME LOOP*/
 	SDL_Event e;
 	SDL_PollEvent(&e);
