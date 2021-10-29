@@ -8,7 +8,6 @@
 #include "Camera.h"
 #include "Collision.h"
 #include "Player.h"
-#include "Tileset.h"
 
 #define WINDOW_X 1280
 #define WINDOW_Y 720
