@@ -120,7 +120,6 @@ int main(){
 		if(camera.y + camera.view.h/2 > texDim.y) camera.set_pos(camera.x, texDim.y - camera.view.h/2);
 		
 		/*--Collision--*/
-		//TODO: implement javidx9 AABB tutorial
 		for(Uint64 i = 0; i < colliders.size(); i++){
 			if(colliders[i]->isDynamic){
 				std::vector<SortingData> contacts; //check "Collision.h" for SortingData definition
@@ -128,10 +127,24 @@ int main(){
 					if(n != i){
 						RaycastData data = check_dynamic_collision(colliders[i], colliders[n]);
 						if(data.contact){
-							colliders[i]->vel.x += data.contactNormal.x * abs(colliders[i]->vel.x) * (1.0f-data.contactTime);
-					colliders[i]->vel.y += data.contactNormal.y * abs(colliders[i]->vel.y) * (1.0f-data.contactTime);
+							SortingData d = {n, data.contactTime};
+							contacts.push_back(d);
+							//colliders[i]->vel.x += data.contactNormal.x * abs(colliders[i]->vel.x) * (1.0f-data.contactTime);
+							//colliders[i]->vel.y += data.contactNormal.y * abs(colliders[i]->vel.y) * (1.0f-data.contactTime);
 						}
 					}
+				}
+				
+				//sorts the contacts array ascending by contactTime
+				std::sort(contacts.begin(), contacts.end(), [](SortingData a, SortingData b){
+					return a.contactTime < b.contactTime;
+				});
+				
+				for(Uint64 z = 0; z < contacts.size(); z++){
+					//i dont understand why this has to be calculated again, but it doesnt work without this...
+					RaycastData data = check_dynamic_collision(colliders[i], colliders[contacts[z].index]);
+					colliders[i]->vel.x += data.contactNormal.x * abs(colliders[i]->vel.x) * (1.0f-data.contactTime);
+					colliders[i]->vel.y += data.contactNormal.y * abs(colliders[i]->vel.y) * (1.0f-data.contactTime);
 				}
 				
 				colliders[i]->pos.x += colliders[i]->vel.x * deltaTime;

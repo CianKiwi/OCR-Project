@@ -14,6 +14,11 @@ struct RaycastData{
 	double contactTime;
 };
 
+struct SortingData{
+	Uint64 index;
+	double contactTime;
+};
+
 //NOTE: while SDL does have SDL_FRect, a pure c++ version is more portable to other frameworks and programs
 class Collider{
 public:
