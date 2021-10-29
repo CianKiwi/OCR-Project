@@ -14,15 +14,20 @@ struct RaycastData{
 	double contactTime;
 };
 
-//NOTE: while SDL does have SDL_FRect, a pure c++ version is more portable to other frameworks
+//NOTE: while SDL does have SDL_FRect, a pure c++ version is more portable to other frameworks and programs
 class Collider{
 public:
 	Vec2 pos;
 	Vec2 dim;
-	Collider(Vec2 position, Vec2 dimensions);
+	Vec2 vel;
+	bool isDynamic; //is able to move
+	bool isTrigger; //passed through by other dynamic colliders
+	Collider(Vec2 position, Vec2 dimensions, bool dynamic, bool trigger);
 	Collider();
 };
 
-bool check_collision(Collider* a, Collider* b);
+bool check_overlap(Collider* a, Collider* b);
 
 RaycastData check_ray(Vec2 start, Vec2 dir, Collider* c);
+
+RaycastData check_dynamic_collision(Collider* a, Collider* b);

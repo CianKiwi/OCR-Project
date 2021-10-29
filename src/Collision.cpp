@@ -1,12 +1,16 @@
 #include "Collision.h"
 
-Collider::Collider(Vec2 position, Vec2 dimensions)
-:pos{position}, dim{dimensions}{
+Collider::Collider(Vec2 position, Vec2 dimensions, bool dynamic, bool trigger)
+:pos{position}, dim{dimensions}, isDynamic{dynamic}, isTrigger{trigger}{
+	vel = {0,0};
 }
 
 Collider::Collider(){
 	pos = {0,0};
 	dim = {0,0};
+	vel = {0,0};
+	isDynamic = false;
+	isTrigger = false;
 }
 
 bool check_collision(Collider* a, Collider* b){
@@ -15,7 +19,6 @@ bool check_collision(Collider* a, Collider* b){
 	a->pos.x + a->dim.x > b->pos.x &&
 	a->pos.y < b->pos.y + b->dim.y &&
 	a->pos.y + a->dim.y > b->pos.y);
-
 }
 
 RaycastData check_ray(Vec2 start, Vec2 dir, Collider* c){
@@ -26,13 +29,17 @@ RaycastData check_ray(Vec2 start, Vec2 dir, Collider* c){
 	
 	RaycastData data = {false, {0,0}, {0,0}, 0};
 	
-	//account for where the ray is coming from relative to the collider
+	//fix for divide by zero
+	if (std::isnan(tNear.x) || std::isnan(tNear.y)) return data;
+	if (std::isnan(tFar.x) || std::isnan(tFar.y)) return data;
+	
+	//account for where the ray is coming from, relative to the collider
 	if (tNear.x > tFar.x) std::swap(tNear.x, tFar.x);
 	if (tNear.y > tFar.y) std::swap(tNear.y, tFar.y);
 	
 	//collision has not occured
 	if (tNear.x > tFar.y || tNear.y > tFar.x) {
-		std::cout << "no collision has occured" << std::endl;
+		//std::cout << "no collision has occured" << std::endl;
 		return data;
 	}
 	
@@ -41,11 +48,16 @@ RaycastData check_ray(Vec2 start, Vec2 dir, Collider* c){
 	tHitNear = std::max(tNear.x, tNear.y);
 	tHitFar = std::min(tFar.x, tFar.y);
 	
-	data.contactTime = tHitNear;
+	if(tHitNear <= 1.0f){
+		data.contactTime = tHitNear;
+	}
+	else{
+		return data;
+	}
 	
 	//collider is behind the ray
 	if(tHitFar < 0) {
-		std::cout << "collider is behind the ray" << std::endl;
+		//std::cout << "collider is behind the ray" << std::endl;
 		return data;
 	}
 	
@@ -69,5 +81,19 @@ RaycastData check_ray(Vec2 start, Vec2 dir, Collider* c){
 	}
 	
 	data.contact = true;
+	return data;
+}
+
+RaycastData check_dynamic_collision(Collider* a, Collider* b){
+	
+	RaycastData data;
+	
+	if (a->vel.x == 0 && a->vel.y == 0){
+		return data;
+	}
+	
+	Collider expandedCollider={{b->pos.x - a->dim.x/2, b->pos.y - a->dim.y/2},{b->dim.x + a->dim.x, b->dim.y + a->dim.y}, b->isDynamic, b->isTrigger};
+	
+	data = check_ray({a->pos.x + a->dim.x/2, a->pos.y + a->dim.y/2}, {a->vel.x, a->vel.y}, &expandedCollider);
 	return data;
 }

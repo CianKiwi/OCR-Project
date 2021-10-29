@@ -11,9 +11,9 @@ struct Keybinds{
 
 class Player{
 public:
-	double moveSpeed;
 	Collider hitbox;
 	Keybinds binds;
+	double moveSpeed;
 	
 	Player(Collider i_hitbox, Keybinds i_keybinds, double i_moveSpeed);
 };

@@ -1,12 +1,13 @@
 #define SDL_MAIN_HANDLED
 #include <iostream>
 #include <cmath>
+#include <vector>
+#include <algorithm>
 #include "SDL.h"
 #include "SDL_image.h"
 #include "Camera.h"
 #include "Collision.h"
 #include "Player.h"
-#include "Room.h"
 #include "Tileset.h"
 
 #define WINDOW_X 1280
@@ -16,6 +17,11 @@ SDL_Window* window;
 SDL_Renderer* rend;
 
 bool DEBUG = true;
+
+SDL_Rect collider_to_rect(const Collider& c){
+	SDL_Rect r={(int)c.pos.x, (int)c.pos.y, (int)c.dim.x, (int)c.dim.y};
+	return r;
+}
 
 int main(){
 	/*BOILERPLATE*/
@@ -29,52 +35,42 @@ int main(){
 	}
 	
 	/* PROGRAM START*/
-	Tileset dungeonSet("tex/myTestTileset.png", 16, 16);
-	SDL_Texture* dungeonSetTex;
-	dungeonSetTex = SDL_CreateTextureFromSurface(rend, dungeonSet.atlas);
-	Room firstRoom("room3.txt", &dungeonSet, WINDOW_X/2, WINDOW_Y/2);
-	//Room secondRoom(&dungeonSet);
 	SDL_Texture* gameView;
-	SDL_Texture* roomTex;
-	
-	
+	std::vector<Collider*> colliders;
+
 	//player stuff
-	Collider hitbox({0, 0}, {32, 48});
-	Keybinds keys{SDL_SCANCODE_W, SDL_SCANCODE_S, SDL_SCANCODE_A, SDL_SCANCODE_D};
+	Collider hitbox({0, 0}, {32, 48}, true, false);
+	Keybinds keys{SDLK_w, SDLK_s, SDLK_a, SDLK_d};
 	Camera camera(0, 0, WINDOW_X, WINDOW_Y);
 	Player player(hitbox, keys, 3.0f);
 	player.hitbox.pos = {1130, 720};
+	colliders.push_back(&player.hitbox);
 	camera.set_pos(player.hitbox.pos.x + player.hitbox.dim.x/2, player.hitbox.pos.y + player.hitbox.dim.y);
 	
+	//test colliders
+	Collider wallA({1200, 500},{70, 70}, false, false);
+	Collider wallB({900, 1050},{85, 130}, false, false);
+	colliders.push_back(&wallA);
+	colliders.push_back(&wallB);
+	
+	Collider wallC({1300, 600},{127, 45}, false, false);
+	colliders.push_back(&wallC);
+	Collider wallD({1000, 900}, {10, 10}, false, false);
+	colliders.push_back(&wallD);
+	
+	Collider tileA({690, 1300}, {65, 65}, false, false);
+	Collider tileB({755, 1300}, {65, 65}, false, false);
+	Collider tileC({820, 1300}, {65, 65}, false, false);
+	colliders.push_back(&tileA);
+	colliders.push_back(&tileB);
+	colliders.push_back(&tileC);
 	
 	//setup graphics
-	gameView = SDL_CreateTexture(rend, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, camera.view.w + 16 * TILE_DIM_X, camera.view.h + 16 * TILE_DIM_Y);
-	//render the room to a texture to save on computations later
-	roomTex = SDL_CreateTexture(rend, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, camera.view.w + 16 * TILE_DIM_X, camera.view.h + 16 * TILE_DIM_Y);
-	SDL_SetRenderTarget(rend, roomTex);
-	for(int y = 0; y < 16; y++){
-		for(int x = 0; x < 16; x++){
-			SDL_Rect src = dungeonSet.get_tile(firstRoom.tilemap[x][y].row, firstRoom.tilemap[x][y].col);
-			//the tiles are offset to stop the texture from stretching when the camera goes over the edge
-			SDL_Rect dst = {x*TILE_DIM_X + camera.view.w/2, y*TILE_DIM_Y + camera.view.h/2, TILE_DIM_X, TILE_DIM_Y};
-			SDL_RenderCopy(rend, dungeonSetTex,
-				&src, //source rect from room tilemap
-				&dst); //destination rect
-			SDL_RenderPresent(rend);
-		}
-	}
-	
+	gameView = SDL_CreateTexture(rend, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 2048, 2048);
 	
 	/*DEBUGGING AND TEST CODE*/
-	/*
-	Collider c({10, 15},{60, 70});
-	RaycastData data = check_ray({9,15},{50,5},&c);
-	std::cout << data.contact << std::endl;
-	std::cout << data.contactPoint.x << "| " << data.contactPoint.y << std::endl;
-	std::cout << data.contactNormal.x << "| " << data.contactNormal.y << std::endl;
-	std::cout << data.contactTime << std::endl;
-	//*/
 	
+
 	/*GAME LOOP*/
 	SDL_Event e;
 	SDL_PollEvent(&e);
@@ -86,13 +82,6 @@ int main(){
 		LAST = NOW;
 		NOW = SDL_GetPerformanceCounter();
 		deltaTime = (double)((NOW - LAST)*100 / (double)SDL_GetPerformanceFrequency());
-		
-		/*--Collision--*/
-		for (Uint64 x = 0; x < firstRoom.walls.size(); x++){
-			if(check_collision(&player.hitbox, &firstRoom.walls[x])){
-				std::cout << "COLLISION!" << std::endl;
-			}
-		}
 		
 		/*--Player Input & movement--*/
 		bool quit = false;
@@ -108,7 +97,7 @@ int main(){
 			}
 		}
 		if(quit) break;
-		
+
 		//must use this method to achieve smooth movement
 		//poll event stutters in a weird way
 		SDL_PumpEvents(); 
@@ -117,38 +106,49 @@ int main(){
 		//movement (normalised)
 		double playerXmov = (keys[SDL_GetScancodeFromKey(player.binds.left)] ? -1 : 0) + (keys[SDL_GetScancodeFromKey(player.binds.right)] ? 1 : 0);
 		double playerYmov = (keys[SDL_GetScancodeFromKey(player.binds.up)] ? -1 : 0) + (keys[SDL_GetScancodeFromKey(player.binds.down)] ? 1 : 0);
-		double playerMovMagnitude = sqrt(playerXmov * playerXmov + playerYmov * playerYmov); //pythagoras
-		player.hitbox.pos.x += playerXmov * player.moveSpeed * deltaTime / playerMovMagnitude;
-		player.hitbox.pos.y += playerYmov * player.moveSpeed * deltaTime / playerMovMagnitude;;
+		double playerMovMagnitude = abs(sqrt(playerXmov * playerXmov + playerYmov * playerYmov)); //pythagoras
+		player.hitbox.vel.x = playerXmov * player.moveSpeed / ((playerMovMagnitude > 0.0f) ? playerMovMagnitude : 1);
+		player.hitbox.vel.y = playerYmov * player.moveSpeed / ((playerMovMagnitude > 0.0f) ? playerMovMagnitude : 1);
 		
-		//Other Variables
 		camera.set_pos(player.hitbox.pos.x + player.hitbox.dim.x/2, player.hitbox.pos.y + player.hitbox.dim.y/2);
+		//keep texture within the bounds of the game view
+		SDL_Point texDim;
+		SDL_QueryTexture(gameView, 0, 0, &texDim.x, &texDim.y);
+		if(camera.x - camera.view.w/2 < 0) camera.set_pos(camera.view.w/2, camera.y);
+		if(camera.x + camera.view.w/2 > texDim.x) camera.set_pos(texDim.x - camera.view.w/2, camera.y);
+		if(camera.y - camera.view.h/2 < 0) camera.set_pos(camera.x, camera.view.h/2);
+		if(camera.y + camera.view.h/2 > texDim.y) camera.set_pos(camera.x, texDim.y - camera.view.h/2);
 		
+		/*--Collision--*/
+		//TODO: implement javidx9 AABB tutorial
+		for(Uint64 i = 0; i < colliders.size(); i++){
+			if(colliders[i]->isDynamic){
+				std::vector<SortingData> contacts; //check "Collision.h" for SortingData definition
+				for(Uint64 n = 0; n < colliders.size(); n++){
+					if(n != i){
+						RaycastData data = check_dynamic_collision(colliders[i], colliders[n]);
+						if(data.contact){
+							colliders[i]->vel.x += data.contactNormal.x * abs(colliders[i]->vel.x) * (1.0f-data.contactTime);
+					colliders[i]->vel.y += data.contactNormal.y * abs(colliders[i]->vel.y) * (1.0f-data.contactTime);
+						}
+					}
+				}
+				
+				colliders[i]->pos.x += colliders[i]->vel.x * deltaTime;
+				colliders[i]->pos.y += colliders[i]->vel.y * deltaTime;
+			}
+		}
 		//Render to game view
-		SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
 		SDL_SetRenderTarget(rend, gameView);
+		SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
 		SDL_RenderClear(rend);
-		SDL_RenderCopy(rend, roomTex, 0, 0);
-		SDL_Rect playerRect = {(int)player.hitbox.pos.x, (int)player.hitbox.pos.y, (int)player.hitbox.dim.x, (int)player.hitbox.dim.y};
-		SDL_SetRenderDrawColor(rend, 255, 196, 196, 255);
-		SDL_RenderFillRect(rend, &playerRect);
 		
 		if(DEBUG){
-			//render colliders (for debug)
-			SDL_SetRenderDrawBlendMode(rend, SDL_BLENDMODE_BLEND);
-			for (Uint64 x = 0; x < firstRoom.walls.size(); x++){
-				SDL_SetRenderDrawColor(rend, sin(firstRoom.walls[x].pos.x*firstRoom.walls[x].pos.y)*255, sin(firstRoom.walls[x].pos.y/firstRoom.walls[x].pos.x)*255, 128, 200);
-				SDL_Rect rect = {(int)firstRoom.walls[x].pos.x, (int)firstRoom.walls[x].pos.y, (int)firstRoom.walls[x].dim.x, (int)firstRoom.walls[x].dim.y};
-				SDL_RenderFillRect(rend, &rect);
+			for(Uint64 i = 0; i < colliders.size(); i++){
+				SDL_Rect cRect = collider_to_rect(*colliders[i]);
+				SDL_SetRenderDrawColor(rend, sqrt(i)*255, cos(i)*255, sin(i)*255, 255);
+				SDL_RenderFillRect(rend, &cRect);
 			}
-
-			//render door colliders (for debug)
-			for (Collider c : firstRoom.doors){
-				SDL_SetRenderDrawColor(rend, 255, 255, 255, 200);
-				SDL_Rect rect = {(int)c.pos.x, (int)c.pos.y, (int)c.dim.x, (int)c.dim.y};
-				SDL_RenderFillRect(rend, &rect);
-			}
-			SDL_SetRenderDrawBlendMode(rend, SDL_BLENDMODE_NONE);
 		}
 		
 		SDL_RenderPresent(rend);
@@ -163,8 +163,6 @@ int main(){
 
 	/*PROGRAM END*/
 	SDL_DestroyTexture(gameView);
-	SDL_DestroyTexture(roomTex);
-	SDL_DestroyTexture(dungeonSetTex);
 	SDL_DestroyRenderer(rend);
 	SDL_DestroyWindow(window);
 	IMG_Quit();
