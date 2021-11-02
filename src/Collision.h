@@ -15,7 +15,7 @@ struct RaycastData{
 };
 
 struct SortingData{
-	Uint64 index;
+	int index;
 	double contactTime;
 };
 

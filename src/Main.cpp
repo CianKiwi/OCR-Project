@@ -8,6 +8,7 @@
 #include "Camera.h"
 #include "Collision.h"
 #include "Player.h"
+#include "Room.h"
 
 #define WINDOW_X 1280
 #define WINDOW_Y 720
@@ -40,13 +41,23 @@ int main(){
 	//player stuff
 	Collider hitbox({0, 0}, {32, 48}, true, false);
 	Keybinds keys{SDLK_w, SDLK_s, SDLK_a, SDLK_d};
-	Camera camera(0, 0, WINDOW_X, WINDOW_Y);
+	Camera camera(0, 0, WINDOW_X/2, WINDOW_Y/2);
 	Player player(hitbox, keys, 3.0f);
-	player.hitbox.pos = {1130, 720};
+	player.hitbox.pos = {70, 70};
 	colliders.push_back(&player.hitbox);
 	camera.set_pos(player.hitbox.pos.x + player.hitbox.dim.x/2, player.hitbox.pos.y + player.hitbox.dim.y);
 	
+	//room stuff
+	Room myRoom("room_expected.txt");
+	for(Uint64 i = 0; i < myRoom.walls.size(); i++){
+		colliders.push_back(&myRoom.walls[i]);
+	}
+	for(Uint64 i = 0; i < myRoom.doors.size(); i++){
+		colliders.push_back(&myRoom.doors[i]);
+	}
+	
 	//test colliders
+	/*
 	Collider wallA({1200, 500},{70, 70}, false, false);
 	Collider wallB({900, 1050},{85, 130}, false, false);
 	colliders.push_back(&wallA);
@@ -63,12 +74,10 @@ int main(){
 	colliders.push_back(&tileA);
 	colliders.push_back(&tileB);
 	colliders.push_back(&tileC);
+	//*/
 	
 	//setup graphics
-	gameView = SDL_CreateTexture(rend, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 2048, 2048);
-	
-	/*DEBUGGING AND TEST CODE*/
-	
+	gameView = SDL_CreateTexture(rend, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 64*19, 64*8);
 
 	/*GAME LOOP*/
 	SDL_Event e;
