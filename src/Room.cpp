@@ -1,19 +1,22 @@
 #include "Room.h"
 
-Room::Room(const char* source){
+Room::Room(const char* source, Vec2 tileDim){
 	std::ifstream srcFile(source, std::ifstream::in);
 	
 	char c;
-	Vec2 tileDim = {64, 64};
 	Collider w({0, 0}, {0, tileDim.y}, false, false);
 	
+	//ISSUE: tile indices are hard coded. this makes it hard to change the tileset
 	while(srcFile.get(c)){
-		/*do stuff*/
 		switch(c){
 			case '#':
+				std::cout << "making wall" << std::endl;
+				//wall
 				w.dim.x += tileDim.x;
 				break;
 			case '\n':
+				std::cout << "new line" << std::endl;
+				//new line
 				if (w.dim.x > 0){
 					//append wall
 					walls.push_back(w);
@@ -27,7 +30,12 @@ Room::Room(const char* source){
 					w.pos.y += tileDim.y;
 				}
 				break;
-			case ('N' || 'E' || 'S' || 'W'):
+			case 'N':
+			case 'E':
+			case 'S':
+			case 'W':
+				//door
+				std::cout << "making door" << std::endl;
 				if (w.dim.x > 0){
 					//append wall
 					walls.push_back(w);
@@ -43,6 +51,8 @@ Room::Room(const char* source){
 				w.dim.x = 0;
 				break;
 			default:
+				std::cout << "default" << std::endl;
+				//floor (and other characters)
 				if (w.dim.x > 0){
 					//append wall
 					walls.push_back(w);

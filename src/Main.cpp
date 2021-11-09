@@ -48,7 +48,7 @@ int main(){
 	camera.set_pos(player.hitbox.pos.x + player.hitbox.dim.x/2, player.hitbox.pos.y + player.hitbox.dim.y);
 	
 	//room stuff
-	Room myRoom("room_expected.txt");
+	Room myRoom("room1.txt", {64, 64});
 	for(Uint64 i = 0; i < myRoom.walls.size(); i++){
 		colliders.push_back(&myRoom.walls[i]);
 	}
