@@ -17,8 +17,10 @@ SDL_Window* window;
 SDL_Renderer* rend;
 
 bool DEBUG = true;
+int currentRoom_test = 0;
 
 SDL_Rect collider_to_rect(const Collider& c){
+	//creates an SDL_Rect from a collider for use in rendering
 	SDL_Rect r={(int)c.pos.x, (int)c.pos.y, (int)c.dim.x, (int)c.dim.y};
 	return r;
 }
@@ -39,7 +41,7 @@ int main(){
 	std::vector<Collider*> colliders;
 
 	//player stuff
-	Collider hitbox({0, 0}, {32, 48}, true, false);
+	Collider hitbox({0, 0}, {32, 48}, true, true, false);
 	Keybinds keys{SDLK_w, SDLK_s, SDLK_a, SDLK_d};
 	Camera camera(0, 0, WINDOW_X/2, WINDOW_Y/2);
 	Player player(hitbox, keys, 3.0f);
@@ -48,7 +50,7 @@ int main(){
 	camera.set_pos(player.hitbox.pos.x + player.hitbox.dim.x/2, player.hitbox.pos.y + player.hitbox.dim.y);
 	
 	//room stuff
-	Room myRoom("room1.txt", {64, 64});
+	Room myRoom("room3.txt", {64, 64});
 	for(Uint64 i = 0; i < myRoom.walls.size(); i++){
 		colliders.push_back(&myRoom.walls[i]);
 	}
@@ -56,6 +58,15 @@ int main(){
 		colliders.push_back(&myRoom.doors[i]);
 	}
 	
+	Room myRoom2("room_expected.txt", {64, 64});
+	for(Uint64 i = 0; i < myRoom2.walls.size(); i++){
+		myRoom2.walls[i].isActive = false;
+		colliders.push_back(&myRoom2.walls[i]);
+	}
+	for(Uint64 i = 0; i < myRoom2.doors.size(); i++){
+		myRoom2.doors[i].isActive = false;
+		colliders.push_back(&myRoom2.doors[i]);
+	}
 	//test colliders
 	/*
 	Collider wallA({1200, 500},{70, 70}, false, false);
@@ -102,10 +113,48 @@ int main(){
 					DEBUG = !DEBUG; //flip on or off
 					std::cout << "DEBUG: " << (DEBUG ? "ON" : "OFF") << std::endl;
 				}
+				if(e.key.keysym.sym == 'r'){
+					currentRoom_test = (currentRoom_test + 1) % 2;
+					std::cout << "ROOM SWAP: " << currentRoom_test << std::endl;
+				}
 			}
 		}
 		if(quit) break;
-
+		
+		//TEST ROOM SWAPPING (NOT ROBUST)
+		if(currentRoom_test == 1){
+			//enable room 1
+			for(Uint64 i = 0; i < myRoom.walls.size(); i++){
+				myRoom.walls[i].isActive = true;
+			}
+			for(Uint64 i = 0; i < myRoom.doors.size(); i++){
+				myRoom.doors[i].isActive = true;
+			}
+			//disable room 2
+			for(Uint64 i = 0; i < myRoom2.walls.size(); i++){
+				myRoom2.walls[i].isActive = false;
+			}
+			for(Uint64 i = 0; i < myRoom2.doors.size(); i++){
+				myRoom2.doors[i].isActive = false;
+			}
+		}
+		else{
+			//enable room 2
+			for(Uint64 i = 0; i < myRoom.walls.size(); i++){
+				myRoom.walls[i].isActive = false;
+			}
+			for(Uint64 i = 0; i < myRoom.doors.size(); i++){
+				myRoom.doors[i].isActive = false;
+			}
+			//disable room 1
+			for(Uint64 i = 0; i < myRoom2.walls.size(); i++){
+				myRoom2.walls[i].isActive = true;
+			}
+			for(Uint64 i = 0; i < myRoom2.doors.size(); i++){
+				myRoom2.doors[i].isActive = true;
+			}
+		}
+		
 		//must use this method to achieve smooth movement
 		//poll event stutters in a weird way
 		SDL_PumpEvents(); 
@@ -129,10 +178,10 @@ int main(){
 		
 		/*--Collision--*/
 		for(Uint64 i = 0; i < colliders.size(); i++){
-			if(colliders[i]->isDynamic){
+			if(colliders[i]->isActive && colliders[i]->isDynamic){
 				std::vector<SortingData> contacts; //check "Collision.h" for SortingData definition
 				for(Uint64 n = 0; n < colliders.size(); n++){
-					if(n != i){
+					if(colliders[n]->isActive && n != i){
 						RaycastData data = check_dynamic_collision(colliders[i], colliders[n]);
 						if(data.contact){
 							SortingData d = {n, data.contactTime};
@@ -166,9 +215,11 @@ int main(){
 		
 		if(DEBUG){
 			for(Uint64 i = 0; i < colliders.size(); i++){
-				SDL_Rect cRect = collider_to_rect(*colliders[i]);
-				SDL_SetRenderDrawColor(rend, sqrt(i)*255, cos(i)*255, sin(i)*255, 255);
-				SDL_RenderFillRect(rend, &cRect);
+				if(colliders[i]->isActive){
+					SDL_Rect cRect = collider_to_rect(*colliders[i]);
+					SDL_SetRenderDrawColor(rend, sqrt(i)*255, cos(i)*255, sin(i)*255, 255);
+					SDL_RenderFillRect(rend, &cRect);
+				}
 			}
 		}
 		

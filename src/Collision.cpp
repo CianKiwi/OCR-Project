@@ -1,7 +1,7 @@
 #include "Collision.h"
 
-Collider::Collider(Vec2 position, Vec2 dimensions, bool dynamic, bool trigger)
-:pos{position}, dim{dimensions}, isDynamic{dynamic}, isTrigger{trigger}{
+Collider::Collider(Vec2 position, Vec2 dimensions, bool active, bool dynamic, bool trigger)
+:pos{position}, dim{dimensions}, isActive{active}, isDynamic{dynamic}, isTrigger{trigger}{
 	vel = {0,0};
 }
 
@@ -92,7 +92,7 @@ RaycastData check_dynamic_collision(Collider* a, Collider* b){
 		return data;
 	}
 	
-	Collider expandedCollider={{b->pos.x - a->dim.x/2, b->pos.y - a->dim.y/2},{b->dim.x + a->dim.x, b->dim.y + a->dim.y}, b->isDynamic, b->isTrigger};
+	Collider expandedCollider={{b->pos.x - a->dim.x/2, b->pos.y - a->dim.y/2},{b->dim.x + a->dim.x, b->dim.y + a->dim.y}, b->isActive, b->isDynamic, b->isTrigger};
 	
 	data = check_ray({a->pos.x + a->dim.x/2, a->pos.y + a->dim.y/2}, {a->vel.x, a->vel.y}, &expandedCollider);
 	return data;
