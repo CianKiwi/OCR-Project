@@ -2,10 +2,10 @@
 
 Room::Room(const char* source, Vec2 tileDim){
 	std::ifstream srcFile(source, std::ifstream::in);
-	
+
 	char c;
 	Collider w({0, 0}, {0, tileDim.y}, true, false, false);
-	
+
 	//ISSUE: tile indices are hard coded. this makes it hard to change the tileset
 	while(srcFile.get(c)){
 		switch(c){
@@ -77,6 +77,6 @@ Room::Room(const char* source, Vec2 tileDim){
 	else{
 		w.pos.x += tileDim.x;
 	}
-	
+
 	srcFile.close();
 }

@@ -25,7 +25,7 @@ SDL_Rect collider_to_rect(const Collider& c){
 	return r;
 }
 
-int main(){
+int main(int argc, char** argv){
 	/*BOILERPLATE*/
 	SDL_Init(SDL_INIT_VIDEO);
 	IMG_Init(IMG_INIT_JPG|IMG_INIT_PNG);
@@ -68,23 +68,11 @@ int main(){
 		colliders.push_back(&myRoom2.doors[i]);
 	}
 	//test colliders
-	/*
-	Collider wallA({1200, 500},{70, 70}, false, false);
-	Collider wallB({900, 1050},{85, 130}, false, false);
+	
+	Collider wallA({20, 16},{12, 12});
+	Collider wallB({ 80, 190 }, { 34, 16});
 	colliders.push_back(&wallA);
 	colliders.push_back(&wallB);
-	
-	Collider wallC({1300, 600},{127, 45}, false, false);
-	colliders.push_back(&wallC);
-	Collider wallD({1000, 900}, {10, 10}, false, false);
-	colliders.push_back(&wallD);
-	
-	Collider tileA({690, 1300}, {65, 65}, false, false);
-	Collider tileB({755, 1300}, {65, 65}, false, false);
-	Collider tileC({820, 1300}, {65, 65}, false, false);
-	colliders.push_back(&tileA);
-	colliders.push_back(&tileB);
-	colliders.push_back(&tileC);
 	//*/
 	
 	//setup graphics

@@ -12,6 +12,8 @@ struct RaycastData{
 	Vec2 contactPoint;
 	Vec2 contactNormal;
 	double contactTime;
+
+	RaycastData();
 };
 
 struct SortingData{
@@ -29,6 +31,7 @@ public:
 	bool isTrigger; //passed through by other dynamic colliders
 	bool isActive;
 	Collider(Vec2 position, Vec2 dimensions, bool active, bool dynamic, bool trigger);
+	Collider(Vec2 position, Vec2 dimensions);
 	Collider();
 };
 

@@ -1,12 +1,28 @@
 #include <iostream>
+#include <vector>
 #include "SDL.h"
 #include "SDL_Image.h"
+#include "Collision.h"
+
+struct tile{
+    int row, col;
+};
 
 class Tileset{
 public:
-	SDL_Texture* atlas;
-	int cols, rows;
-	SDL_Point tileSize;
-	Tileset(SDL_Renderer* rend, const char* source, int i_cols, int i_rows, SDL_Point i_tileSize);
-	SDL_Rect get_tile(int col, int row);
+    SDL_Surface* atlas;
+    int tileWidth, tileHeight;
+    int rows, cols;
+    SDL_Rect get_tile(tile t);
+
+    Tileset(const char* source, int rows, int cols);
+};
+
+class Tilemap{
+    Tileset* set;
+    std::vector<tile> indices;
+    int map[64][64];
+    Vec2 tileDim;
+
+    Tilemap(Tileset* i_set, Vec2 i_tileDim);
 };

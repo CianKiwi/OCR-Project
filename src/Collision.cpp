@@ -5,13 +5,27 @@ Collider::Collider(Vec2 position, Vec2 dimensions, bool active, bool dynamic, bo
 	vel = {0,0};
 }
 
+Collider::Collider(Vec2 position, Vec2 dimensions) 
+:pos{position}, dim{dimensions}
+{
+	isDynamic = isTrigger = isActive = false;
+}
+
 Collider::Collider(){
 	pos = {0,0};
 	dim = {0,0};
 	vel = {0,0};
 	isDynamic = false;
 	isTrigger = false;
+	isActive = true;
 }
+
+RaycastData::RaycastData() {
+	contact = false;
+	contactPoint = { 0,0 };
+	contactNormal = { 0,0 };
+	contactTime = 0;
+};
 
 bool check_collision(Collider* a, Collider* b){
 
@@ -27,8 +41,8 @@ RaycastData check_ray(Vec2 start, Vec2 dir, Collider* c){
 	Vec2 tNear = {(c->pos.x - start.x) / dir.x, (c->pos.y - start.y) / dir.y};
 	Vec2 tFar = {(c->pos.x + c->dim.x - start.x)/dir.x, (c->pos.y + c->dim.y - start.y)/dir.y};
 	
-	RaycastData data = {false, {0,0}, {0,0}, 0};
-	
+	RaycastData data;
+
 	//fix for divide by zero
 	if (std::isnan(tNear.x) || std::isnan(tNear.y)) return data;
 	if (std::isnan(tFar.x) || std::isnan(tFar.y)) return data;
