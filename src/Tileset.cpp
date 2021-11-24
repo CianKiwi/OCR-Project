@@ -5,6 +5,10 @@ Tilemap::Tilemap(Tileset* i_set, Vec2 i_tileDim)
     indices.push_back({0,0});
 }
 
+Tilemap::Tilemap(){
+	tileDim = {0,0};
+}
+
 Tileset::Tileset(const char* source, int i_rows, int i_cols){
     atlas = IMG_Load(source);
     if(!atlas){

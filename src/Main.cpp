@@ -17,7 +17,6 @@ SDL_Window* window;
 SDL_Renderer* rend;
 
 bool DEBUG = true;
-int currentRoom_test = 0;
 
 SDL_Rect collider_to_rect(const Collider& c){
 	//creates an SDL_Rect from a collider for use in rendering
@@ -25,7 +24,18 @@ SDL_Rect collider_to_rect(const Collider& c){
 	return r;
 }
 
-int main(int argc, char** argv){
+void reload_colliders(std::vector<Collider*>& colliders, Room* room, Player& player){
+	colliders.clear();
+	colliders.push_back(&player.hitbox);
+	for (Uint64 x = 0; x < room->walls.size(); x++){
+		colliders.push_back(&room->walls[x]);
+	}
+	for (Uint64 x = 0; x < room->doors.size(); x++){
+		colliders.push_back(&room->doors[x]);
+	}
+}
+
+void GAME(){
 	/*BOILERPLATE*/
 	SDL_Init(SDL_INIT_VIDEO);
 	IMG_Init(IMG_INIT_JPG|IMG_INIT_PNG);
@@ -33,13 +43,14 @@ int main(int argc, char** argv){
 	rend = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 	if(!window || !rend){
 		std::cout << "error creating window or renderer" << std::endl;
-		return -1;
+		return;
 	}
 	
 	/* PROGRAM START*/
 	SDL_Texture* gameView;
 	std::vector<Collider*> colliders;
-
+	Room* currentRoom;
+	
 	//player stuff
 	Collider hitbox({0, 0}, {32, 48}, true, true, false);
 	Keybinds keys{SDLK_w, SDLK_s, SDLK_a, SDLK_d};
@@ -50,23 +61,34 @@ int main(int argc, char** argv){
 	camera.set_pos(player.hitbox.pos.x + player.hitbox.dim.x/2, player.hitbox.pos.y + player.hitbox.dim.y);
 	
 	//room stuff
-	Room myRoom("room3.txt", {64, 64});
+	Tileset dungeonSet("tex/myTestTileset.png", 16, 16);
+	Room myRoom("room3.txt", {64, 64}, &dungeonSet);
+	currentRoom = &myRoom;
 	for(Uint64 i = 0; i < myRoom.walls.size(); i++){
 		colliders.push_back(&myRoom.walls[i]);
 	}
 	for(Uint64 i = 0; i < myRoom.doors.size(); i++){
 		colliders.push_back(&myRoom.doors[i]);
 	}
+	Room myRoom2("room2.txt", {64, 64}, &dungeonSet);
+	for(Uint64 i = 0; i < myRoom.walls.size(); i++){
+		colliders.push_back(&myRoom.walls[i]);
+	}
+	for(Uint64 i = 0; i < myRoom.doors.size(); i++){
+		colliders.push_back(&myRoom.doors[i]);
+	}
+	//data for testing room swaps
+	Room* rooms[2] = {&myRoom, &myRoom2};
+	int rmCounterTest;
 	
-	Room myRoom2("room_expected.txt", {64, 64});
-	for(Uint64 i = 0; i < myRoom2.walls.size(); i++){
-		myRoom2.walls[i].isActive = false;
-		colliders.push_back(&myRoom2.walls[i]);
+	for (int x = 0; x < 64; x++){
+		std::cout << "[";
+		for (int y : currentRoom->tilemap.map[x]){
+			std::cout << y << ", ";
+		}
+		std::cout << " ]" << std::endl;
 	}
-	for(Uint64 i = 0; i < myRoom2.doors.size(); i++){
-		myRoom2.doors[i].isActive = false;
-		colliders.push_back(&myRoom2.doors[i]);
-	}
+	//*/
 	//test colliders
 	
 	Collider wallA({20, 16},{12, 12});
@@ -76,7 +98,7 @@ int main(int argc, char** argv){
 	//*/
 	
 	//setup graphics
-	gameView = SDL_CreateTexture(rend, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 64*19, 64*8);
+	gameView = SDL_CreateTexture(rend, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 64*64, 64*64);
 
 	/*GAME LOOP*/
 	SDL_Event e;
@@ -102,47 +124,15 @@ int main(int argc, char** argv){
 					std::cout << "DEBUG: " << (DEBUG ? "ON" : "OFF") << std::endl;
 				}
 				if(e.key.keysym.sym == 'r'){
-					currentRoom_test = (currentRoom_test + 1) % 2;
-					std::cout << "ROOM SWAP: " << currentRoom_test << std::endl;
+					rmCounterTest++;
+					rmCounterTest %= 2;
+					currentRoom = rooms[rmCounterTest];
+					reload_colliders(colliders, currentRoom, player);
 				}
 			}
 		}
 		if(quit) break;
-		
-		//TEST ROOM SWAPPING (NOT ROBUST)
-		if(currentRoom_test == 1){
-			//enable room 1
-			for(Uint64 i = 0; i < myRoom.walls.size(); i++){
-				myRoom.walls[i].isActive = true;
-			}
-			for(Uint64 i = 0; i < myRoom.doors.size(); i++){
-				myRoom.doors[i].isActive = true;
-			}
-			//disable room 2
-			for(Uint64 i = 0; i < myRoom2.walls.size(); i++){
-				myRoom2.walls[i].isActive = false;
-			}
-			for(Uint64 i = 0; i < myRoom2.doors.size(); i++){
-				myRoom2.doors[i].isActive = false;
-			}
-		}
-		else{
-			//enable room 2
-			for(Uint64 i = 0; i < myRoom.walls.size(); i++){
-				myRoom.walls[i].isActive = false;
-			}
-			for(Uint64 i = 0; i < myRoom.doors.size(); i++){
-				myRoom.doors[i].isActive = false;
-			}
-			//disable room 1
-			for(Uint64 i = 0; i < myRoom2.walls.size(); i++){
-				myRoom2.walls[i].isActive = true;
-			}
-			for(Uint64 i = 0; i < myRoom2.doors.size(); i++){
-				myRoom2.doors[i].isActive = true;
-			}
-		}
-		
+
 		//must use this method to achieve smooth movement
 		//poll event stutters in a weird way
 		SDL_PumpEvents(); 
@@ -174,6 +164,7 @@ int main(int argc, char** argv){
 						if(data.contact){
 							SortingData d = {n, data.contactTime};
 							contacts.push_back(d);
+							//vv this is done later vv
 							//colliders[i]->vel.x += data.contactNormal.x * abs(colliders[i]->vel.x) * (1.0f-data.contactTime);
 							//colliders[i]->vel.y += data.contactNormal.y * abs(colliders[i]->vel.y) * (1.0f-data.contactTime);
 						}
@@ -186,7 +177,6 @@ int main(int argc, char** argv){
 				});
 				
 				for(Uint64 z = 0; z < contacts.size(); z++){
-					//i dont understand why this has to be calculated again, but it doesnt work without this...
 					RaycastData data = check_dynamic_collision(colliders[i], colliders[contacts[z].index]);
 					colliders[i]->vel.x += data.contactNormal.x * abs(colliders[i]->vel.x) * (1.0f-data.contactTime);
 					colliders[i]->vel.y += data.contactNormal.y * abs(colliders[i]->vel.y) * (1.0f-data.contactTime);
@@ -201,14 +191,36 @@ int main(int argc, char** argv){
 		SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
 		SDL_RenderClear(rend);
 		
+		//shoddy code to render tilemap
+		//--TEMPORARY--
+		SDL_Texture* setTex = SDL_CreateTextureFromSurface(rend, currentRoom->tilemap.set->atlas);
+		for (int x = 0; x < 64; x++){
+			for (int y = 0; y < 64; y++){
+				tile t = currentRoom->tilemap.indices[currentRoom->tilemap.map[x][y]];
+				SDL_Rect src = currentRoom->tilemap.set->get_tile(t);
+				SDL_Rect dst = {x * currentRoom->tilemap.tileDim.x, y * currentRoom->tilemap.tileDim.y, currentRoom->tilemap.tileDim.x, currentRoom->tilemap.tileDim.y};
+				SDL_RenderCopy(rend, setTex, &src, &dst);
+			}
+		}
+		SDL_DestroyTexture(setTex);
+
+		//render player  
+		SDL_Rect playerRect = collider_to_rect(player.hitbox);
+		SDL_SetRenderDrawColor(rend, 255,255,255,255);
+		SDL_RenderFillRect(rend, &playerRect);
+		
+		
+		/*ALWAYS DO LAST*/
 		if(DEBUG){
+			SDL_SetRenderDrawBlendMode(rend, SDL_BLENDMODE_BLEND);
 			for(Uint64 i = 0; i < colliders.size(); i++){
 				if(colliders[i]->isActive){
 					SDL_Rect cRect = collider_to_rect(*colliders[i]);
-					SDL_SetRenderDrawColor(rend, sqrt(i)*255, cos(i)*255, sin(i)*255, 255);
+					SDL_SetRenderDrawColor(rend, sqrt(i)*255, cos(i)*255, sin(i)*255, 128);
 					SDL_RenderFillRect(rend, &cRect);
 				}
 			}
+			SDL_SetRenderDrawBlendMode(rend, SDL_BLENDMODE_NONE);
 		}
 		
 		SDL_RenderPresent(rend);
@@ -227,5 +239,10 @@ int main(int argc, char** argv){
 	SDL_DestroyWindow(window);
 	IMG_Quit();
 	SDL_Quit();
+	return;
+}
+
+int main(int argc, char** argv){
+	GAME();
 	return 0;
 }
