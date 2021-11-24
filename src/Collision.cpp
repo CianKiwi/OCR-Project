@@ -1,8 +1,14 @@
 #include "Collision.h"
 
-Collider::Collider(Vec2 position, Vec2 dimensions, bool dynamic, bool trigger)
-:pos{position}, dim{dimensions}, isDynamic{dynamic}, isTrigger{trigger}{
+Collider::Collider(Vec2 position, Vec2 dimensions, bool active, bool dynamic, bool trigger)
+:pos{position}, dim{dimensions}, isActive{active}, isDynamic{dynamic}, isTrigger{trigger}{
 	vel = {0,0};
+}
+
+Collider::Collider(Vec2 position, Vec2 dimensions) 
+:pos{position}, dim{dimensions}
+{
+	isDynamic = isTrigger = isActive = false;
 }
 
 Collider::Collider(){
@@ -11,7 +17,15 @@ Collider::Collider(){
 	vel = {0,0};
 	isDynamic = false;
 	isTrigger = false;
+	isActive = true;
 }
+
+RaycastData::RaycastData() {
+	contact = false;
+	contactPoint = { 0,0 };
+	contactNormal = { 0,0 };
+	contactTime = 0;
+};
 
 bool check_collision(Collider* a, Collider* b){
 
@@ -27,8 +41,8 @@ RaycastData check_ray(Vec2 start, Vec2 dir, Collider* c){
 	Vec2 tNear = {(c->pos.x - start.x) / dir.x, (c->pos.y - start.y) / dir.y};
 	Vec2 tFar = {(c->pos.x + c->dim.x - start.x)/dir.x, (c->pos.y + c->dim.y - start.y)/dir.y};
 	
-	RaycastData data = {false, {0,0}, {0,0}, 0};
-	
+	RaycastData data;
+
 	//fix for divide by zero
 	if (std::isnan(tNear.x) || std::isnan(tNear.y)) return data;
 	if (std::isnan(tFar.x) || std::isnan(tFar.y)) return data;
@@ -92,7 +106,7 @@ RaycastData check_dynamic_collision(Collider* a, Collider* b){
 		return data;
 	}
 	
-	Collider expandedCollider={{b->pos.x - a->dim.x/2, b->pos.y - a->dim.y/2},{b->dim.x + a->dim.x, b->dim.y + a->dim.y}, b->isDynamic, b->isTrigger};
+	Collider expandedCollider={{b->pos.x - a->dim.x/2, b->pos.y - a->dim.y/2},{b->dim.x + a->dim.x, b->dim.y + a->dim.y}, b->isActive, b->isDynamic, b->isTrigger};
 	
 	data = check_ray({a->pos.x + a->dim.x/2, a->pos.y + a->dim.y/2}, {a->vel.x, a->vel.y}, &expandedCollider);
 	return data;
