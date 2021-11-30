@@ -1,18 +1,19 @@
 #include "Room.h"
+#include "Tileset.h"
 
-Room::Room(const char* source, Vec2 tileDim, Tileset* tileset){
+Room::Room(const char* source, Tileset* tileset){
 	std::ifstream srcFile(source, std::ifstream::in);
-	tilemap = Tilemap(tileset, tileDim);
+	tilemap = Tilemap(tileset);
 	/*--NOTE: THIS METHOD OF IMPLEMENTING TILEMAPS IS TEMPORARY--*/
 	tilemap.indices.push_back({1,0}); //wall
 	tilemap.indices.push_back({1,1}); //floor
 	tilemap.indices.push_back({1,2}); //door
 	char c;
-	Collider w({0, 0}, {0, tileDim.y}, true, false, false);
+	Collider w({0, 0}, {0, ROOM_TILE_SIZE}, true, false, false);
 	int mapX, mapY = 0;
 	
-	for (int x = 0; x < 64; x++){
-		for (int y = 0; y < 64; y++){
+	for (int x = 0; x < TILEMAP_SIZE; x++){
+		for (int y = 0; y < TILEMAP_SIZE; y++){
 			tilemap.map[x][y] = 0;
 		}
 	}
@@ -23,7 +24,7 @@ Room::Room(const char* source, Vec2 tileDim, Tileset* tileset){
 			case '#':
 				std::cout << "making wall" << std::endl;
 				//wall
-				w.dim.x += tileDim.x;
+				w.dim.x += ROOM_TILE_SIZE;
 				tilemap.map[mapX][mapY] = 1;
 				mapX++;
 				break;
@@ -35,12 +36,12 @@ Room::Room(const char* source, Vec2 tileDim, Tileset* tileset){
 					walls.push_back(w);
 					//reset collider
 					w.pos.x = 0;
-					w.pos.y += tileDim.y;
+					w.pos.y += ROOM_TILE_SIZE;
 					w.dim.x = 0;
 				}
 				else{
 					w.pos.x = 0;
-					w.pos.y += tileDim.y;
+					w.pos.y += ROOM_TILE_SIZE;
 				}
 				mapX = 0;
 				mapY++;
@@ -58,7 +59,7 @@ Room::Room(const char* source, Vec2 tileDim, Tileset* tileset){
 					w.pos.x += w.dim.x;
 					w.dim.x = 0;
 				}
-				w.dim.x = tileDim.x;
+				w.dim.x = ROOM_TILE_SIZE;
 				//append door
 				doors.push_back(w);
 				//reset collider
@@ -74,11 +75,11 @@ Room::Room(const char* source, Vec2 tileDim, Tileset* tileset){
 					//append wall
 					walls.push_back(w);
 					//reset collider
-					w.pos.x += w.dim.x + tileDim.x;
+					w.pos.x += w.dim.x + ROOM_TILE_SIZE;
 					w.dim.x = 0;
 				}
 				else{
-					w.pos.x += tileDim.x;
+					w.pos.x += ROOM_TILE_SIZE;
 				}
 				tilemap.map[mapX][mapY] = 2;
 				mapX++;
@@ -90,11 +91,11 @@ Room::Room(const char* source, Vec2 tileDim, Tileset* tileset){
 					//append wall
 					walls.push_back(w);
 					//reset collider
-					w.pos.x += w.dim.x + tileDim.x;
+					w.pos.x += w.dim.x + ROOM_TILE_SIZE;
 					w.dim.x = 0;
 				}
 				else{
-					w.pos.x += tileDim.x;
+					w.pos.x += ROOM_TILE_SIZE;
 				}
 				tilemap.map[mapX][mapY] = 0;
 				mapX++;
@@ -106,11 +107,11 @@ Room::Room(const char* source, Vec2 tileDim, Tileset* tileset){
 			//append wall
 			walls.push_back(w);
 			//reset collider
-			w.pos.x += w.dim.x + tileDim.x;
+			w.pos.x += w.dim.x + ROOM_TILE_SIZE;
 			w.dim.x = 0;
 		}
 	else{
-		w.pos.x += tileDim.x;
+		w.pos.x += ROOM_TILE_SIZE;
 	}
 
 	srcFile.close();

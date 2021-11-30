@@ -5,6 +5,7 @@
 #include <algorithm>
 #include "SDL.h"
 #include "SDL_image.h"
+#include "Tileset.h"
 #include "Camera.h"
 #include "Collision.h"
 #include "Player.h"
@@ -62,7 +63,7 @@ void GAME(){
 	
 	//room stuff
 	Tileset dungeonSet("tex/myTestTileset.png", 16, 16);
-	Room myRoom("room3.txt", {64, 64}, &dungeonSet);
+	Room myRoom("room3.txt", &dungeonSet);
 	currentRoom = &myRoom;
 	for(Uint64 i = 0; i < myRoom.walls.size(); i++){
 		colliders.push_back(&myRoom.walls[i]);
@@ -70,7 +71,7 @@ void GAME(){
 	for(Uint64 i = 0; i < myRoom.doors.size(); i++){
 		colliders.push_back(&myRoom.doors[i]);
 	}
-	Room myRoom2("room2.txt", {64, 64}, &dungeonSet);
+	Room myRoom2("room2.txt", &dungeonSet);
 	for(Uint64 i = 0; i < myRoom.walls.size(); i++){
 		colliders.push_back(&myRoom.walls[i]);
 	}
@@ -81,7 +82,7 @@ void GAME(){
 	Room* rooms[2] = {&myRoom, &myRoom2};
 	int rmCounterTest;
 	
-	for (int x = 0; x < 64; x++){
+	for (int x = 0; x < TILEMAP_SIZE; x++){
 		std::cout << "[";
 		for (int y : currentRoom->tilemap.map[x]){
 			std::cout << y << ", ";
@@ -194,11 +195,11 @@ void GAME(){
 		//shoddy code to render tilemap
 		//--TEMPORARY--
 		SDL_Texture* setTex = SDL_CreateTextureFromSurface(rend, currentRoom->tilemap.set->atlas);
-		for (int x = 0; x < 64; x++){
-			for (int y = 0; y < 64; y++){
-				tile t = currentRoom->tilemap.indices[currentRoom->tilemap.map[x][y]];
+		for (int x = 0; x < TILEMAP_SIZE; x++){
+			for (int y = 0; y < TILEMAP_SIZE; y++){
+				tile t = currentRoom->tilemap.get_tile_indices(x, y); //this line is unpleasant
 				SDL_Rect src = currentRoom->tilemap.set->get_tile(t);
-				SDL_Rect dst = {x * currentRoom->tilemap.tileDim.x, y * currentRoom->tilemap.tileDim.y, currentRoom->tilemap.tileDim.x, currentRoom->tilemap.tileDim.y};
+				SDL_Rect dst = {x * ROOM_TILE_SIZE, y * ROOM_TILE_SIZE, ROOM_TILE_SIZE, ROOM_TILE_SIZE};
 				SDL_RenderCopy(rend, setTex, &src, &dst);
 			}
 		}

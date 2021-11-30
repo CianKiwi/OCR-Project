@@ -1,12 +1,16 @@
 #include "Tileset.h"
 
-Tilemap::Tilemap(Tileset* i_set, Vec2 i_tileDim)
-    : set{i_set}, tileDim{i_tileDim}{
+Tilemap::Tilemap(Tileset* i_set)
+    : set{i_set}{
     indices.push_back({0,0});
 }
 
 Tilemap::Tilemap(){
-	tileDim = {0,0};
+	indices.push_back({0,0});
+}
+
+tile Tilemap::get_tile_indices(int x, int y){
+	return indices[map[x][y]];
 }
 
 Tileset::Tileset(const char* source, int i_rows, int i_cols){
