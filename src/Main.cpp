@@ -163,7 +163,7 @@ void GAME(){
 					if(colliders[n]->isActive && n != i){
 						RaycastData data = check_dynamic_collision(colliders[i], colliders[n]);
 						if(data.contact){
-							SortingData d = {n, data.contactTime};
+							SortingData d = {(int)n, data.contactTime};
 							contacts.push_back(d);
 							//vv this is done later vv
 							//colliders[i]->vel.x += data.contactNormal.x * abs(colliders[i]->vel.x) * (1.0f-data.contactTime);
