@@ -61,7 +61,7 @@ Room::Room(const char* source, Tileset* tileset){
 				}
 				w.dim.x = ROOM_TILE_SIZE;
 				//append door
-				doors.push_back(w);
+				walls.push_back(w);
 				//reset collider
 				w.pos.x += w.dim.x;
 				w.dim.x = 0;

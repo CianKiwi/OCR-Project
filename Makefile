@@ -5,9 +5,8 @@ SRC=src
 BIN=bin
 SRCS=$(wildcard $(SRC)/*.cpp)
 OBJS=$(patsubst $(SRC)/%.cpp, $(BIN)/%.o, $(SRCS))
-SDLDIR= "C:/Users/Cian/Libraries/SDL2/dev libs
-INCDIR= -I $(SDLDIR)/SDL2/include" -I $(SDLDIR)/SDL2_Image/include" -I $(SDLDIR)/SDL2_ttf/include"
-LIBDIR= -L $(SDLDIR)/SDL2/lib/x64" -L $(SDLDIR)/SDL2_Image/lib/x64" -L $(SDLDIR)/SDL2_ttf/lib/x64"
+INCDIR= -I $(SRC)/includes/SDL2 -I $(SRC)/includes/SDL2_image -I $(SRC)/includes/SDL2_ttf
+LIBDIR= -L $(BIN)
 LIB=-l SDL2 -l SDL2main -l SDL2_image -l SDL2_ttf
 EXEC=Program
 

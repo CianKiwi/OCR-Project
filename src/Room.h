@@ -12,7 +12,6 @@ class Room{
 private:
 public:
 	std::vector<Collider> walls;
-	std::vector<Collider> doors;
 	Tilemap tilemap;
 	
 	Room(const char* source, Tileset* tileset);
