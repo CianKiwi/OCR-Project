@@ -60,12 +60,12 @@ void GAME(){
 	
 	//room stuff
 	Tileset dungeonSet("tex/myTestTileset.png", 16, 16);
-	Room myRoom("room3.txt", &dungeonSet);
+	Room myRoom("rooms/ESW_1.txt", &dungeonSet);
 	currentRoom = &myRoom;
 	for(Uint64 i = 0; i < myRoom.walls.size(); i++){
 		colliders.push_back(&myRoom.walls[i]);
 	}
-	Room myRoom2("room2.txt", &dungeonSet);
+	Room myRoom2("rooms/NESW_1.txt", &dungeonSet);
 	for(Uint64 i = 0; i < myRoom.walls.size(); i++){
 		colliders.push_back(&myRoom.walls[i]);
 	}
