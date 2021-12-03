@@ -1,7 +1,7 @@
 #include "Collision.h"
 
 Collider::Collider(Vec2 position, Vec2 dimensions, bool active, bool dynamic, bool trigger)
-:pos{position}, dim{dimensions}, isActive{active}, isDynamic{dynamic}, isTrigger{trigger}{
+:pos{position}, dim{dimensions}, isDynamic{dynamic}, isTrigger{trigger}, isActive{active}{
 	vel = {0,0};
 }
 
