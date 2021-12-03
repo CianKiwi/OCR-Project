@@ -73,15 +73,7 @@ void GAME(){
 	/*temporary*/
 	Room* rooms[2] = {&myRoom, &myRoom2};
 	int rmCounterTest;
-	
-	for (int x = 0; x < TILEMAP_SIZE; x++){
-		std::cout << "[";
-		for (int y : currentRoom->tilemap.map[x]){
-			std::cout << y << ", ";
-		}
-		std::cout << " ]" << std::endl;
-	}
-	
+
 	//setup graphics
 	gameView = SDL_CreateTexture(rend, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 64*64, 64*64);
 
