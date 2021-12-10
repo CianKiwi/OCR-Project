@@ -1,9 +1,11 @@
 #include "Room.h"
 #include "Tileset.h"
 
-Room::Room(const char* source, Tileset* tileset){
+Room::Room(){	
+}
+
+Room::Room(const char* source){
 	std::ifstream srcFile(source, std::ifstream::in);
-	tilemap = Tilemap(tileset);
 	/*--NOTE: THIS METHOD OF IMPLEMENTING TILEMAPS IS TEMPORARY--*/
 	tilemap.indices.push_back({1,0}); //wall
 	tilemap.indices.push_back({1,1}); //floor

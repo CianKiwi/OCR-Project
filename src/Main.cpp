@@ -10,6 +10,7 @@
 #include "Collision.h"
 #include "Player.h"
 #include "Room.h"
+#include "Level.h"
 
 #define WINDOW_X 1280
 #define WINDOW_Y 720
@@ -47,6 +48,7 @@ void GAME(){
 	/* PROGRAM START*/
 	SDL_Texture* gameView;
 	std::vector<Collider*> colliders;
+	Index2 currentRoomIndex;
 	Room* currentRoom;
 	
 	//player stuff
@@ -60,19 +62,9 @@ void GAME(){
 	
 	//room stuff
 	Tileset dungeonSet("tex/myTestTileset.png", 16, 16);
-	Room myRoom("rooms/ESW_1.txt", &dungeonSet);
-	currentRoom = &myRoom;
-	for(Uint64 i = 0; i < myRoom.walls.size(); i++){
-		colliders.push_back(&myRoom.walls[i]);
-	}
-	Room myRoom2("rooms/NESW_1.txt", &dungeonSet);
-	for(Uint64 i = 0; i < myRoom.walls.size(); i++){
-		colliders.push_back(&myRoom.walls[i]);
-	}
-	//data for testing room swaps
-	/*temporary*/
-	Room* rooms[2] = {&myRoom, &myRoom2};
-	int rmCounterTest;
+	Level testLevel;
+	currentRoomIndex = {LEVELMAP_SIZE/2, LEVELMAP_SIZE/2};
+	currentRoom = &(testLevel.levelMap[currentRoomIndex.r][currentRoomIndex.c]);
 
 	//setup graphics
 	gameView = SDL_CreateTexture(rend, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 64*64, 64*64);
@@ -99,12 +91,6 @@ void GAME(){
 				if(e.key.keysym.sym == 'h'){
 					DEBUG = !DEBUG; //flip on or off
 					std::cout << "DEBUG: " << (DEBUG ? "ON" : "OFF") << std::endl;
-				}
-				if(e.key.keysym.sym == 'r'){
-					rmCounterTest++;
-					rmCounterTest %= 2;
-					currentRoom = rooms[rmCounterTest];
-					reload_colliders(colliders, currentRoom, player);
 				}
 			}
 		}
@@ -169,11 +155,11 @@ void GAME(){
 		SDL_RenderClear(rend);
 		
 		//tilemap
-		SDL_Texture* setTex = SDL_CreateTextureFromSurface(rend, currentRoom->tilemap.set->atlas);
+		SDL_Texture* setTex = SDL_CreateTextureFromSurface(rend, dungeonSet.atlas);
 		for (int x = 0; x < TILEMAP_SIZE; x++){
 			for (int y = 0; y < TILEMAP_SIZE; y++){
-				tile t = currentRoom->tilemap.get_tile_indices(x, y); //this line is unpleasant
-				SDL_Rect src = currentRoom->tilemap.set->get_tile(t);
+				Index2 t = currentRoom->tilemap.get_tile_indices(x, y); //this line is unpleasant
+				SDL_Rect src = dungeonSet.get_tile(t);
 				SDL_Rect dst = {x * ROOM_TILE_SIZE, y * ROOM_TILE_SIZE, ROOM_TILE_SIZE, ROOM_TILE_SIZE};
 				SDL_RenderCopy(rend, setTex, &src, &dst);
 			}

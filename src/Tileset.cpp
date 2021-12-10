@@ -1,15 +1,10 @@
 #include "Tileset.h"
 
-Tilemap::Tilemap(Tileset* i_set)
-    : set{i_set}{
-    indices.push_back({0,0});
-}
-
 Tilemap::Tilemap(){
 	indices.push_back({0,0});
 }
 
-tile Tilemap::get_tile_indices(int x, int y){
+Index2 Tilemap::get_tile_indices(int x, int y){
 	return indices[map[x][y]];
 }
 
@@ -30,11 +25,11 @@ Tileset::Tileset(const char* source, int i_rows, int i_cols){
     }
 }
 
-SDL_Rect Tileset::get_tile(tile t){
+SDL_Rect Tileset::get_tile(Index2 t){
     SDL_Rect rect{0,0,0,0};
-    if(t.row < rows && t.col < cols){
-        rect.x = tileWidth * t.col;
-        rect.y = tileHeight * t.row;
+    if(t.r < rows && t.c < cols){
+        rect.x = tileWidth * t.c;
+        rect.y = tileHeight * t.r;
         rect.w = tileWidth;
         rect.h = tileHeight;
     }
