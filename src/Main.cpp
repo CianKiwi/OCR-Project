@@ -36,6 +36,7 @@ void reload_colliders(std::vector<Collider*>& colliders, Room* room, Player& pla
 
 void GAME(){
 	/*BOILERPLATE*/
+	std::cout << "setting up required data" << std::endl;
 	SDL_Init(SDL_INIT_VIDEO);
 	IMG_Init(IMG_INIT_JPG|IMG_INIT_PNG);
 	window = SDL_CreateWindow("H446 GAME", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_X, WINDOW_Y, 0);
@@ -62,9 +63,11 @@ void GAME(){
 	
 	//room stuff
 	Tileset dungeonSet("tex/myTestTileset.png", 16, 16);
-	Level testLevel;
-	currentRoomIndex = {LEVELMAP_SIZE/2, LEVELMAP_SIZE/2};
-	currentRoom = &(testLevel.levelMap[currentRoomIndex.r][currentRoomIndex.c]);
+	Room testRoom("rooms/NESW_1");
+	//Level testLevel;
+	//currentRoomIndex = {LEVELMAP_SIZE/2, LEVELMAP_SIZE/2};
+	//currentRoom = &(testLevel.levelMap[testLevel.spawnRoom.r][testLevel.spawnRoom.c]);
+	currentRoom = &(testRoom);
 
 	//setup graphics
 	gameView = SDL_CreateTexture(rend, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 64*64, 64*64);
@@ -77,6 +80,7 @@ void GAME(){
 	double deltaTime = 0;
 	while(e.type != SDL_QUIT){
 		//calculate delta time
+		std::cout << "entering game loop" << std::endl;
 		LAST = NOW;
 		NOW = SDL_GetPerformanceCounter();
 		deltaTime = (double)((NOW - LAST)*100 / (double)SDL_GetPerformanceFrequency());
@@ -206,6 +210,8 @@ void GAME(){
 }
 
 int main(int argc, char** argv){
+	std::cout << "starting game" << std::endl;
 	GAME();
+	std::cout << "finishing game" << std::endl;
 	return 0;
 }

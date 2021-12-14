@@ -3,6 +3,7 @@
 Level::Level(){
 	
 	//all rooms and number of variations of each type
+	/*
 	std::vector<std::pair<const char*, int>> LUT_availableRooms;
 	
 	//rooms with a door in given cardinal direction
@@ -18,10 +19,10 @@ Level::Level(){
 	std::vector<int> LUT_One;
 	
 	std::vector<Unconnected> stack;
-	
+	*/
 	std::srand(time(0));
 	
-	levelMap[LEVELMAP_SIZE/2][LEVELMAP_SIZE/2] = Room("NESW_1");
-	levelMap[LEVELMAP_SIZE/2][1+(LEVELMAP_SIZE/2)] = Room("W_1");
+	levelMap[LEVELMAP_SIZE/2][LEVELMAP_SIZE/2] = Room("rooms/NESW_1");
+	levelMap[LEVELMAP_SIZE/2][1+(LEVELMAP_SIZE/2)] = Room("rooms/W_1");
 	spawnRoom = {LEVELMAP_SIZE/2, LEVELMAP_SIZE/2};
 }

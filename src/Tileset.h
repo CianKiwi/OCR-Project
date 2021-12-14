@@ -16,6 +16,7 @@ public:
 	
     SDL_Rect get_tile(Index2 t);
     Tileset(const char* source, int rows, int cols);
+	~Tileset();
 };
 
 class Tilemap{

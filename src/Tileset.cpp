@@ -25,6 +25,10 @@ Tileset::Tileset(const char* source, int i_rows, int i_cols){
     }
 }
 
+Tileset::~Tileset(){
+	SDL_FreeSurface(atlas);
+};
+
 SDL_Rect Tileset::get_tile(Index2 t){
     SDL_Rect rect{0,0,0,0};
     if(t.r < rows && t.c < cols){
