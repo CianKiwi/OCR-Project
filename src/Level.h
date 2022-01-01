@@ -1,9 +1,9 @@
 #pragma once
 #include <iostream>
-#include <stdlib.h>
-#include <time.h>
-#include "Room.h"
+#include <fstream>
+#include <vector>
 #include "Structs.h"
+#include "Room.h"
 
 const int LEVELMAP_SIZE = 16;
 
@@ -14,8 +14,10 @@ struct Unconnected{
 
 class Level{
 public:
-	Room levelMap[LEVELMAP_SIZE][LEVELMAP_SIZE];
+	std::vector<Room> rooms;
+	int levelMap[LEVELMAP_SIZE][LEVELMAP_SIZE];
 	Index2 spawnRoom;
 	
 	Level();
+	Room* get_room(int r, int c);
 };

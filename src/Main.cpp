@@ -11,6 +11,7 @@
 #include "Player.h"
 #include "Room.h"
 #include "Level.h"
+#include "Structs.h"
 
 #define WINDOW_X 1280
 #define WINDOW_Y 720
@@ -34,6 +35,7 @@ void reload_colliders(std::vector<Collider*>& colliders, Room* room, Player& pla
 	}
 }
 
+
 void GAME(){
 	/*BOILERPLATE*/
 	std::cout << "setting up required data" << std::endl;
@@ -49,7 +51,6 @@ void GAME(){
 	/* PROGRAM START*/
 	SDL_Texture* gameView;
 	std::vector<Collider*> colliders;
-	Index2 currentRoomIndex;
 	Room* currentRoom;
 	
 	//player stuff
@@ -62,13 +63,12 @@ void GAME(){
 	camera.set_pos(player.hitbox.pos.x + player.hitbox.dim.x/2, player.hitbox.pos.y + player.hitbox.dim.y);
 	
 	//room stuff
+	Index2 rIndex = {8,8};
 	Tileset dungeonSet("tex/myTestTileset.png", 16, 16);
-	Room testRoom("rooms/NESW_1");
-	//Level testLevel;
-	//currentRoomIndex = {LEVELMAP_SIZE/2, LEVELMAP_SIZE/2};
-	//currentRoom = &(testLevel.levelMap[testLevel.spawnRoom.r][testLevel.spawnRoom.c]);
-	currentRoom = &(testRoom);
-
+	Level testLevel;
+	currentRoom = testLevel.get_room(rIndex.r, rIndex.c);
+	reload_colliders(colliders, currentRoom, player);
+	
 	//setup graphics
 	gameView = SDL_CreateTexture(rend, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 64*64, 64*64);
 
@@ -80,7 +80,6 @@ void GAME(){
 	double deltaTime = 0;
 	while(e.type != SDL_QUIT){
 		//calculate delta time
-		std::cout << "entering game loop" << std::endl;
 		LAST = NOW;
 		NOW = SDL_GetPerformanceCounter();
 		deltaTime = (double)((NOW - LAST)*100 / (double)SDL_GetPerformanceFrequency());
@@ -92,9 +91,11 @@ void GAME(){
 				quit = true;
 			}
 			else if(e.type == SDL_KEYDOWN){
-				if(e.key.keysym.sym == 'h'){
-					DEBUG = !DEBUG; //flip on or off
-					std::cout << "DEBUG: " << (DEBUG ? "ON" : "OFF") << std::endl;
+				switch(e.key.keysym.sym){
+					case SDLK_h:
+						DEBUG = !DEBUG; //flip on or off
+						std::cout << "DEBUG: " << (DEBUG ? "ON" : "OFF") << std::endl;
+						break;
 				}
 			}
 		}
@@ -132,8 +133,6 @@ void GAME(){
 							SortingData d = {(int)n, data.contactTime};
 							contacts.push_back(d);
 							//vv this is done later vv
-							//colliders[i]->vel.x += data.contactNormal.x * abs(colliders[i]->vel.x) * (1.0f-data.contactTime);
-							//colliders[i]->vel.y += data.contactNormal.y * abs(colliders[i]->vel.y) * (1.0f-data.contactTime);
 						}
 					}
 				}
