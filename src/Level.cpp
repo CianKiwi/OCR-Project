@@ -2,6 +2,12 @@
 
 Level::Level(){
 	
+	for (int x = 0; x < LEVELMAP_SIZE; x++){
+		for (int y = 0; y < LEVELMAP_SIZE; y++){
+			levelMap[x][y] = -1;
+		}
+	}
+	
 	std::vector<std::string> combos = {"N", "E", "S", "W", "NE", "NS", "NW", "ES", "EW", "SW", "NES", "NEW", "NSW", "ESW", "NESW"};
 	//all rooms and number of variations of each type
 	std::vector<std::pair<std::string, int>> LUT_availableRooms;
@@ -57,7 +63,7 @@ Level::Level(){
 	rooms.push_back(rW);
 	levelMap[LEVELMAP_SIZE/2][LEVELMAP_SIZE/2] = 0;
 	levelMap[LEVELMAP_SIZE/2][LEVELMAP_SIZE/2 +1] = 1;
-	levelMap[LEVELMAP_SIZE/2 +1][LEVELMAP_SIZE/2] = 2;
+	levelMap[LEVELMAP_SIZE/2 -1][LEVELMAP_SIZE/2] = 2;
 	levelMap[LEVELMAP_SIZE/2][LEVELMAP_SIZE/2 -1] = 3;
 	levelMap[LEVELMAP_SIZE/2 +1][LEVELMAP_SIZE/2] = 4;
 	//*/

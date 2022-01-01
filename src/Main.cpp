@@ -96,6 +96,77 @@ void GAME(){
 						DEBUG = !DEBUG; //flip on or off
 						std::cout << "DEBUG: " << (DEBUG ? "ON" : "OFF") << std::endl;
 						break;
+					case SDLK_UP:
+						//move one room north if possible
+						rIndex.c -= 1;
+						if (rIndex.c > 0 && testLevel.levelMap[rIndex.r][rIndex.c] != -1){
+							currentRoom = testLevel.get_room(rIndex.r, rIndex.c);
+							reload_colliders(colliders, currentRoom, player);
+							for (Door d : currentRoom->doors){
+								const CardinalBool dir = d.facing;
+								if (dir == _NORTH){
+									player.hitbox.pos = d.spawnPoint;
+								}
+							}
+						}
+						else{
+							rIndex.c += 1;
+						}
+						break;
+					
+					case SDLK_RIGHT:
+						//move one room east if possible
+						rIndex.r += 1;
+						if (rIndex.r < LEVELMAP_SIZE && testLevel.levelMap[rIndex.r][rIndex.c] != -1){
+							currentRoom = testLevel.get_room(rIndex.r, rIndex.c);
+							reload_colliders(colliders, currentRoom, player);
+							for (Door d : currentRoom->doors){
+								const CardinalBool dir = d.facing;
+								if (dir == _EAST){
+									player.hitbox.pos = d.spawnPoint;
+								}
+							}
+						}
+						else{
+							rIndex.r -= 1;
+						}
+						break;
+					
+					case SDLK_DOWN:
+						//move one room south if possible
+						rIndex.c += 1;
+						if (rIndex.c < LEVELMAP_SIZE && testLevel.levelMap[rIndex.r][rIndex.c] != -1){
+							currentRoom = testLevel.get_room(rIndex.r, rIndex.c);
+							reload_colliders(colliders, currentRoom, player);
+							for (Door d : currentRoom->doors){
+								const CardinalBool dir = d.facing;
+								if (dir == _SOUTH){
+									player.hitbox.pos = d.spawnPoint;
+								}
+							}
+						}
+						else{
+							rIndex.c -= 1;
+						}
+						break;
+					
+					case SDLK_LEFT:
+						//move one room west if possible
+						rIndex.r -= 1;
+						if (rIndex.r > 0 && testLevel.levelMap[rIndex.r][rIndex.c] != -1){
+							currentRoom = testLevel.get_room(rIndex.r, rIndex.c);
+							reload_colliders(colliders, currentRoom, player);
+							for (Door d : currentRoom->doors){
+								const CardinalBool dir = d.facing;
+								if (dir == _WEST){
+									player.hitbox.pos = d.spawnPoint;
+								}
+							}
+						}
+						else{
+							rIndex.r += 1;
+						}
+						break;
 				}
 			}
 		}

@@ -64,19 +64,19 @@ Room::Room(const char* source){
 				//create door struct (for use when moving between rooms)
 				d.position = w.pos;
 				if (c == 'N'){
-					d.spawnPoint = {w.pos.x, w.pos.y + ROOM_TILE_SIZE + 2};
+					d.spawnPoint = {w.pos.x + 16, w.pos.y + ROOM_TILE_SIZE + 8};
 					d.facing = _SOUTH;
 				}
 				else if (c == 'E'){
-					d.spawnPoint = {w.pos.x - ROOM_TILE_SIZE - 2, w.pos.y};
+					d.spawnPoint = {w.pos.x - ROOM_TILE_SIZE + 16, w.pos.y + 8};
 					d.facing = _WEST;
 				}
 				else if (c == 'S'){
-					d.spawnPoint = {w.pos.x, w.pos.y - ROOM_TILE_SIZE - 2};
+					d.spawnPoint = {w.pos.x + 16, w.pos.y - ROOM_TILE_SIZE + 8};
 					d.facing = _NORTH;
 				}
 				else if (c == 'W'){
-					d.spawnPoint = {w.pos.x + ROOM_TILE_SIZE + 2, w.pos.y};
+					d.spawnPoint = {w.pos.x + ROOM_TILE_SIZE + 16, w.pos.y + 8};
 					d.facing = _EAST;
 				}
 				doors.push_back(d);
