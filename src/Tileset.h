@@ -4,12 +4,9 @@
 #include "SDL.h"
 #include "SDL_Image.h"
 #include "Collision.h"
+#include "Structs.h"
 
 const int TILEMAP_SIZE = 48;
-
-struct tile{
-    int row, col;
-};
 
 class Tileset{
 public:
@@ -17,18 +14,17 @@ public:
     int tileWidth, tileHeight;
     int rows, cols;
 	
-    SDL_Rect get_tile(tile t);
+    SDL_Rect get_tile(Index2 t);
     Tileset(const char* source, int rows, int cols);
+	~Tileset();
 };
 
 class Tilemap{
 public:
-    Tileset* set;
-    std::vector<tile> indices;
+    std::vector<Index2> indices;
     int map[TILEMAP_SIZE][TILEMAP_SIZE];
 
-    Tilemap(Tileset* i_set);
 	Tilemap();
 	
-	tile get_tile_indices(int x, int y);
+	Index2 get_tile_indices(int x, int y);
 };

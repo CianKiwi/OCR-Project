@@ -10,6 +10,8 @@
 #include "Collision.h"
 #include "Player.h"
 #include "Room.h"
+#include "Level.h"
+#include "Structs.h"
 
 #define WINDOW_X 1280
 #define WINDOW_Y 720
@@ -33,8 +35,10 @@ void reload_colliders(std::vector<Collider*>& colliders, Room* room, Player& pla
 	}
 }
 
+
 void GAME(){
 	/*BOILERPLATE*/
+	std::cout << "setting up required data" << std::endl;
 	SDL_Init(SDL_INIT_VIDEO);
 	IMG_Init(IMG_INIT_JPG|IMG_INIT_PNG);
 	window = SDL_CreateWindow("H446 GAME", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_X, WINDOW_Y, 0);
@@ -59,21 +63,12 @@ void GAME(){
 	camera.set_pos(player.hitbox.pos.x + player.hitbox.dim.x/2, player.hitbox.pos.y + player.hitbox.dim.y);
 	
 	//room stuff
+	Index2 rIndex = {8,8};
 	Tileset dungeonSet("tex/myTestTileset.png", 16, 16);
-	Room myRoom("room3.txt", &dungeonSet);
-	currentRoom = &myRoom;
-	for(Uint64 i = 0; i < myRoom.walls.size(); i++){
-		colliders.push_back(&myRoom.walls[i]);
-	}
-	Room myRoom2("room2.txt", &dungeonSet);
-	for(Uint64 i = 0; i < myRoom.walls.size(); i++){
-		colliders.push_back(&myRoom.walls[i]);
-	}
-	//data for testing room swaps
-	/*temporary*/
-	Room* rooms[2] = {&myRoom, &myRoom2};
-	int rmCounterTest;
-
+	Level testLevel;
+	currentRoom = testLevel.get_room(rIndex.r, rIndex.c);
+	reload_colliders(colliders, currentRoom, player);
+	
 	//setup graphics
 	gameView = SDL_CreateTexture(rend, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 64*64, 64*64);
 
@@ -96,15 +91,82 @@ void GAME(){
 				quit = true;
 			}
 			else if(e.type == SDL_KEYDOWN){
-				if(e.key.keysym.sym == 'h'){
-					DEBUG = !DEBUG; //flip on or off
-					std::cout << "DEBUG: " << (DEBUG ? "ON" : "OFF") << std::endl;
-				}
-				if(e.key.keysym.sym == 'r'){
-					rmCounterTest++;
-					rmCounterTest %= 2;
-					currentRoom = rooms[rmCounterTest];
-					reload_colliders(colliders, currentRoom, player);
+				switch(e.key.keysym.sym){
+					case SDLK_h:
+						DEBUG = !DEBUG; //flip on or off
+						std::cout << "DEBUG: " << (DEBUG ? "ON" : "OFF") << std::endl;
+						break;
+					case SDLK_UP:
+						//move one room north if possible
+						rIndex.c -= 1;
+						if (rIndex.c > 0 && testLevel.levelMap[rIndex.r][rIndex.c] != -1){
+							currentRoom = testLevel.get_room(rIndex.r, rIndex.c);
+							reload_colliders(colliders, currentRoom, player);
+							for (Door d : currentRoom->doors){
+								const CardinalBool dir = d.facing;
+								if (dir == _NORTH){
+									player.hitbox.pos = d.spawnPoint;
+								}
+							}
+						}
+						else{
+							rIndex.c += 1;
+						}
+						break;
+					
+					case SDLK_RIGHT:
+						//move one room east if possible
+						rIndex.r += 1;
+						if (rIndex.r < LEVELMAP_SIZE && testLevel.levelMap[rIndex.r][rIndex.c] != -1){
+							currentRoom = testLevel.get_room(rIndex.r, rIndex.c);
+							reload_colliders(colliders, currentRoom, player);
+							for (Door d : currentRoom->doors){
+								const CardinalBool dir = d.facing;
+								if (dir == _EAST){
+									player.hitbox.pos = d.spawnPoint;
+								}
+							}
+						}
+						else{
+							rIndex.r -= 1;
+						}
+						break;
+					
+					case SDLK_DOWN:
+						//move one room south if possible
+						rIndex.c += 1;
+						if (rIndex.c < LEVELMAP_SIZE && testLevel.levelMap[rIndex.r][rIndex.c] != -1){
+							currentRoom = testLevel.get_room(rIndex.r, rIndex.c);
+							reload_colliders(colliders, currentRoom, player);
+							for (Door d : currentRoom->doors){
+								const CardinalBool dir = d.facing;
+								if (dir == _SOUTH){
+									player.hitbox.pos = d.spawnPoint;
+								}
+							}
+						}
+						else{
+							rIndex.c -= 1;
+						}
+						break;
+					
+					case SDLK_LEFT:
+						//move one room west if possible
+						rIndex.r -= 1;
+						if (rIndex.r > 0 && testLevel.levelMap[rIndex.r][rIndex.c] != -1){
+							currentRoom = testLevel.get_room(rIndex.r, rIndex.c);
+							reload_colliders(colliders, currentRoom, player);
+							for (Door d : currentRoom->doors){
+								const CardinalBool dir = d.facing;
+								if (dir == _WEST){
+									player.hitbox.pos = d.spawnPoint;
+								}
+							}
+						}
+						else{
+							rIndex.r += 1;
+						}
+						break;
 				}
 			}
 		}
@@ -142,8 +204,6 @@ void GAME(){
 							SortingData d = {(int)n, data.contactTime};
 							contacts.push_back(d);
 							//vv this is done later vv
-							//colliders[i]->vel.x += data.contactNormal.x * abs(colliders[i]->vel.x) * (1.0f-data.contactTime);
-							//colliders[i]->vel.y += data.contactNormal.y * abs(colliders[i]->vel.y) * (1.0f-data.contactTime);
 						}
 					}
 				}
@@ -169,11 +229,11 @@ void GAME(){
 		SDL_RenderClear(rend);
 		
 		//tilemap
-		SDL_Texture* setTex = SDL_CreateTextureFromSurface(rend, currentRoom->tilemap.set->atlas);
+		SDL_Texture* setTex = SDL_CreateTextureFromSurface(rend, dungeonSet.atlas);
 		for (int x = 0; x < TILEMAP_SIZE; x++){
 			for (int y = 0; y < TILEMAP_SIZE; y++){
-				tile t = currentRoom->tilemap.get_tile_indices(x, y); //this line is unpleasant
-				SDL_Rect src = currentRoom->tilemap.set->get_tile(t);
+				Index2 t = currentRoom->tilemap.get_tile_indices(x, y); //this line is unpleasant
+				SDL_Rect src = dungeonSet.get_tile(t);
 				SDL_Rect dst = {x * ROOM_TILE_SIZE, y * ROOM_TILE_SIZE, ROOM_TILE_SIZE, ROOM_TILE_SIZE};
 				SDL_RenderCopy(rend, setTex, &src, &dst);
 			}
@@ -220,6 +280,8 @@ void GAME(){
 }
 
 int main(int argc, char** argv){
+	std::cout << "starting game" << std::endl;
 	GAME();
+	std::cout << "finishing game" << std::endl;
 	return 0;
 }

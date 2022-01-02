@@ -1,13 +1,7 @@
 #pragma once
 #include "SDL.h"
 #include "Collision.h"
-
-struct Keybinds{
-	SDL_Keycode up;
-	SDL_Keycode down;
-	SDL_Keycode left;
-	SDL_Keycode right;
-};
+#include "Structs.h"
 
 class Player{
 public:

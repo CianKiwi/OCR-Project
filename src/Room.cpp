@@ -1,15 +1,17 @@
 #include "Room.h"
-#include "Tileset.h"
 
-Room::Room(const char* source, Tileset* tileset){
+Room::Room(){	
+}
+
+Room::Room(const char* source){
 	std::ifstream srcFile(source, std::ifstream::in);
-	tilemap = Tilemap(tileset);
 	/*--NOTE: THIS METHOD OF IMPLEMENTING TILEMAPS IS TEMPORARY--*/
 	tilemap.indices.push_back({1,0}); //wall
 	tilemap.indices.push_back({1,1}); //floor
 	tilemap.indices.push_back({1,2}); //door
 	char c;
 	Collider w({0, 0}, {0, ROOM_TILE_SIZE}, true, false, false);
+	Door d;
 	int mapX, mapY = 0;
 	
 	for (int x = 0; x < TILEMAP_SIZE; x++){
@@ -22,14 +24,12 @@ Room::Room(const char* source, Tileset* tileset){
 	while(srcFile.get(c)){
 		switch(c){
 			case '#':
-				std::cout << "making wall" << std::endl;
 				//wall
 				w.dim.x += ROOM_TILE_SIZE;
 				tilemap.map[mapX][mapY] = 1;
 				mapX++;
 				break;
 			case '\n':
-				std::cout << "new line" << std::endl;
 				//new line
 				if (w.dim.x > 0){
 					//append wall
@@ -51,7 +51,6 @@ Room::Room(const char* source, Tileset* tileset){
 			case 'S':
 			case 'W':
 				//door
-				std::cout << "making door" << std::endl;
 				if (w.dim.x > 0){
 					//append wall
 					walls.push_back(w);
@@ -62,6 +61,25 @@ Room::Room(const char* source, Tileset* tileset){
 				w.dim.x = ROOM_TILE_SIZE;
 				//append door
 				walls.push_back(w);
+				//create door struct (for use when moving between rooms)
+				d.position = w.pos;
+				if (c == 'N'){
+					d.spawnPoint = {w.pos.x + 16, w.pos.y + ROOM_TILE_SIZE + 8};
+					d.facing = _SOUTH;
+				}
+				else if (c == 'E'){
+					d.spawnPoint = {w.pos.x - ROOM_TILE_SIZE + 16, w.pos.y + 8};
+					d.facing = _WEST;
+				}
+				else if (c == 'S'){
+					d.spawnPoint = {w.pos.x + 16, w.pos.y - ROOM_TILE_SIZE + 8};
+					d.facing = _NORTH;
+				}
+				else if (c == 'W'){
+					d.spawnPoint = {w.pos.x + ROOM_TILE_SIZE + 16, w.pos.y + 8};
+					d.facing = _EAST;
+				}
+				doors.push_back(d);
 				//reset collider
 				w.pos.x += w.dim.x;
 				w.dim.x = 0;
@@ -69,7 +87,6 @@ Room::Room(const char* source, Tileset* tileset){
 				mapX++;
 				break;
 			case '-':
-				std::cout << "making floor" << std::endl;
 				//floor (and other characters)
 				if (w.dim.x > 0){
 					//append wall
@@ -85,7 +102,6 @@ Room::Room(const char* source, Tileset* tileset){
 				mapX++;
 				break;
 			default:
-				std::cout << "default" << std::endl;
 				//floor (and other characters)
 				if (w.dim.x > 0){
 					//append wall
@@ -113,6 +129,13 @@ Room::Room(const char* source, Tileset* tileset){
 	else{
 		w.pos.x += ROOM_TILE_SIZE;
 	}
-
+	
+	for (Door d : doors){
+		std::cout << "door:" << std::endl;
+		std::cout << d.position.x << "|" << d.position.y << std::endl;
+		std::cout << d.spawnPoint.x << "|" << d.spawnPoint.y << std::endl;
+		std::cout << d.facing.N << d.facing.E << d.facing.S << d.facing.W << std::endl;
+	}
+	
 	srcFile.close();
 }
