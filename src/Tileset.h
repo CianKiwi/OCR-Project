@@ -6,7 +6,7 @@
 #include "Collision.h"
 #include "Structs.h"
 
-const int TILEMAP_SIZE = 48;
+const int TILEMAP_SIZE = 64;
 
 class Tileset{
 public:

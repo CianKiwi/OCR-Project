@@ -12,7 +12,7 @@ Room::Room(const char* source){
 	char c;
 	Collider w({0, 0}, {0, ROOM_TILE_SIZE}, true, false, false);
 	Door d;
-	int mapX, mapY = 0;
+	int mapX = 0, mapY = 0;
 	
 	for (int x = 0; x < TILEMAP_SIZE; x++){
 		for (int y = 0; y < TILEMAP_SIZE; y++){
@@ -26,6 +26,7 @@ Room::Room(const char* source){
 			case '#':
 				//wall
 				w.dim.x += ROOM_TILE_SIZE;
+				//segmentation fault caused here? wtf?
 				tilemap.map[mapX][mapY] = 1;
 				mapX++;
 				break;

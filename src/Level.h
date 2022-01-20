@@ -2,8 +2,10 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <random>
 #include "Structs.h"
 #include "Room.h"
+
 
 const int LEVELMAP_SIZE = 16;
 

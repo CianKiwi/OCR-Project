@@ -3,6 +3,7 @@
 #include <cmath>
 #include <vector>
 #include <algorithm>
+#include <random>
 #include "SDL.h"
 #include "SDL_image.h"
 #include "Tileset.h"
@@ -47,6 +48,8 @@ void GAME(){
 		std::cout << "error creating window or renderer" << std::endl;
 		return;
 	}
+	
+	
 	
 	/* PROGRAM START*/
 	SDL_Texture* gameView;
@@ -223,6 +226,7 @@ void GAME(){
 				colliders[i]->pos.y += colliders[i]->vel.y * deltaTime;
 			}
 		}
+		
 		/*--RENDER--*/
 		SDL_SetRenderTarget(rend, gameView);
 		SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
