@@ -26,7 +26,6 @@ Room::Room(const char* source){
 			case '#':
 				//wall
 				w.dim.x += ROOM_TILE_SIZE;
-				//segmentation fault caused here? wtf?
 				tilemap.map[mapX][mapY] = 1;
 				mapX++;
 				break;
@@ -129,13 +128,6 @@ Room::Room(const char* source){
 		}
 	else{
 		w.pos.x += ROOM_TILE_SIZE;
-	}
-	
-	for (Door d : doors){
-		std::cout << "door:" << std::endl;
-		std::cout << d.position.x << "|" << d.position.y << std::endl;
-		std::cout << d.spawnPoint.x << "|" << d.spawnPoint.y << std::endl;
-		std::cout << d.facing.N << d.facing.E << d.facing.S << d.facing.W << std::endl;
 	}
 	
 	srcFile.close();

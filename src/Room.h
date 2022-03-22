@@ -12,7 +12,7 @@ const int ROOM_TILE_SIZE = 64;
 struct Door{
 	Vec2 position; //worldspace position
 	Vec2 spawnPoint; //where the player spawns when entering from another room
-	CardinalBool facing; //which way the door faces in the room (Western door faces East)
+	CardinalBool facing; //which way the door faces in the room (e.g., Western door faces East)
 };
 
 
