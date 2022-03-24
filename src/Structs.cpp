@@ -1,19 +1,23 @@
 #include "Structs.h"
 
-bool operator==(const CardinalBool& lhs, const CardinalBool& rhs){
-	return(
-		lhs.N == rhs.N &&
-		lhs.E == rhs.E &&
-		lhs.S == rhs.S &&
-		lhs.W == rhs.W
-		);
+bool operator==(const CardinalBool& a, const CardinalBool& b){
+	bool equal = true;
+	for (int x = 0; x < 4; x++) {
+		if (a.data[x] != b.data[x]){
+			equal = false;
+		}
+	}
+	return equal;
 }
 
 bool operator != (const CardinalBool& a, const CardinalBool& b){
-        return  a.N != b.N ||
-                a.E != b.E ||
-                a.S != b.S ||
-                a.W != b.W;
+	bool unequal = false;
+	for (int x = 0; x < 4; x++) {
+		if (a.data[x] != b.data[x]) {
+			unequal = true;
+		}
+	}
+	return unequal;
 }
 
 void CardinalBool::operator = (const CardinalBool& a){

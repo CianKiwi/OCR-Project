@@ -49,8 +49,6 @@ void GAME(){
 		return;
 	}
 	
-	
-	
 	/* PROGRAM START*/
 	SDL_Texture* gameView;
 	std::vector<Collider*> colliders;
@@ -58,7 +56,7 @@ void GAME(){
 	
 	//player stuff
 	Collider hitbox({0, 0}, {32, 48}, true, true, false);
-	Keybinds keys{SDLK_w, SDLK_s, SDLK_a, SDLK_d};
+	Keybinds keys{SDLK_w, SDLK_s, SDLK_a, SDLK_d, SDLK_e};
 	Camera camera(0, 0, WINDOW_X/2, WINDOW_Y/2);
 	Player player(hitbox, keys, 3.0f);
 	player.hitbox.pos = {70, 70};
@@ -68,8 +66,8 @@ void GAME(){
 	//room stuff
 	Index2 rIndex = {8,8};
 	Tileset dungeonSet("tex/myTestTileset.png", 16, 16);
-	Level testLevel;
-	currentRoom = testLevel.get_room(rIndex.r, rIndex.c);
+	Level level;
+	currentRoom = level.get_room(rIndex.r, rIndex.c);
 	reload_colliders(colliders, currentRoom, player);
 	
 	//setup graphics
@@ -99,75 +97,50 @@ void GAME(){
 						DEBUG = !DEBUG; //flip on or off
 						std::cout << "DEBUG: " << (DEBUG ? "ON" : "OFF") << std::endl;
 						break;
-					case SDLK_UP:
-						//move one room north if possible
-						rIndex.c -= 1;
-						if (rIndex.c > 0 && testLevel.levelMap[rIndex.r][rIndex.c] != -1){
-							currentRoom = testLevel.get_room(rIndex.r, rIndex.c);
+					case SDLK_e: //TODO: figure out how to use custom keybind here
+						//which door is the player interacting with
+						Door closest = currentRoom->doors[0];
+						double distToDoor = calc_distance(player.hitbox.pos, closest.position);;
+						double shortestDistance = distToDoor;
+
+						for (int x = 1; x < currentRoom->doors.size(); x++){
+							distToDoor = calc_distance(player.hitbox.pos, currentRoom->doors[x].position);
+							
+							if (distToDoor < shortestDistance){
+								closest = currentRoom->doors[x];
+								shortestDistance = distToDoor;
+							}
+						}
+
+						if (shortestDistance < player.doorInteractDist) {
+
+							//figure out which direction to move player
+							CardinalBool moveDirection;
+							if (closest.facing == _NORTH) {
+								rIndex.r+=1; //player moves south
+								moveDirection = _SOUTH;
+							}
+							else if (closest.facing == _EAST) {
+								rIndex.c-=1; //player moves west
+								moveDirection = _WEST;
+							}
+							else if (closest.facing == _SOUTH) {
+								rIndex.r-=1; //player moves north
+								moveDirection = _NORTH;
+							}
+							else if (closest.facing == _WEST) {
+								rIndex.c+=1; //player moves east
+								moveDirection = _EAST;
+							}
+							//change room
+							currentRoom = level.get_room(rIndex.r, rIndex.c);
 							reload_colliders(colliders, currentRoom, player);
-							for (Door d : currentRoom->doors){
-								const CardinalBool dir = d.facing;
-								if (dir == _NORTH){
+							//set player position
+							for (Door d : currentRoom->doors) {
+								if (d.facing == moveDirection) {
 									player.hitbox.pos = d.spawnPoint;
 								}
 							}
-						}
-						else{
-							rIndex.c += 1;
-						}
-						break;
-					
-					case SDLK_RIGHT:
-						//move one room east if possible
-						rIndex.r += 1;
-						if (rIndex.r < LEVELMAP_SIZE && testLevel.levelMap[rIndex.r][rIndex.c] != -1){
-							currentRoom = testLevel.get_room(rIndex.r, rIndex.c);
-							reload_colliders(colliders, currentRoom, player);
-							for (Door d : currentRoom->doors){
-								const CardinalBool dir = d.facing;
-								if (dir == _EAST){
-									player.hitbox.pos = d.spawnPoint;
-								}
-							}
-						}
-						else{
-							rIndex.r -= 1;
-						}
-						break;
-					
-					case SDLK_DOWN:
-						//move one room south if possible
-						rIndex.c += 1;
-						if (rIndex.c < LEVELMAP_SIZE && testLevel.levelMap[rIndex.r][rIndex.c] != -1){
-							currentRoom = testLevel.get_room(rIndex.r, rIndex.c);
-							reload_colliders(colliders, currentRoom, player);
-							for (Door d : currentRoom->doors){
-								const CardinalBool dir = d.facing;
-								if (dir == _SOUTH){
-									player.hitbox.pos = d.spawnPoint;
-								}
-							}
-						}
-						else{
-							rIndex.c -= 1;
-						}
-						break;
-					
-					case SDLK_LEFT:
-						//move one room west if possible
-						rIndex.r -= 1;
-						if (rIndex.r > 0 && testLevel.levelMap[rIndex.r][rIndex.c] != -1){
-							currentRoom = testLevel.get_room(rIndex.r, rIndex.c);
-							reload_colliders(colliders, currentRoom, player);
-							for (Door d : currentRoom->doors){
-								const CardinalBool dir = d.facing;
-								if (dir == _WEST){
-									player.hitbox.pos = d.spawnPoint;
-								}
-							}
-						}
-						else{
-							rIndex.r += 1;
 						}
 						break;
 				}
@@ -206,7 +179,6 @@ void GAME(){
 						if(data.contact){
 							SortingData d = {(int)n, data.contactTime};
 							contacts.push_back(d);
-							//vv this is done later vv
 						}
 					}
 				}
@@ -226,6 +198,7 @@ void GAME(){
 				colliders[i]->pos.y += colliders[i]->vel.y * deltaTime;
 			}
 		}
+		
 		
 		/*--RENDER--*/
 		SDL_SetRenderTarget(rend, gameView);

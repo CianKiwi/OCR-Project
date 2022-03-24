@@ -59,7 +59,7 @@ Level::Level(){
         }
         
 		//determine number of doors to use
-        int doorCount;
+        int doorCount = 0;
         std::random_device generator;
         std::uniform_int_distribution<int> distribution(0,door1+door2+door3+door4);
         int Rnum = distribution(generator);
@@ -154,7 +154,6 @@ Level::Level(){
 			}
 		}
 	}
-
 }
 
 Room* Level::get_room(int r, int c){

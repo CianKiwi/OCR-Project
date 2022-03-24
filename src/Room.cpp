@@ -5,10 +5,11 @@ Room::Room(){
 
 Room::Room(const char* source){
 	std::ifstream srcFile(source, std::ifstream::in);
-	/*--NOTE: THIS METHOD OF IMPLEMENTING TILEMAPS IS TEMPORARY--*/
+	/*--NOTE: THIS METHOD OF IMPLEMENTING TILEMAPS IS ARBITRARY--*/
 	tilemap.indices.push_back({1,0}); //wall
 	tilemap.indices.push_back({1,1}); //floor
 	tilemap.indices.push_back({1,2}); //door
+	tilemap.indices.push_back({0,1}); //empty
 	char c;
 	Collider w({0, 0}, {0, ROOM_TILE_SIZE}, true, false, false);
 	Door d;

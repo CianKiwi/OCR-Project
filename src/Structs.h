@@ -16,7 +16,7 @@ struct CardinalBool{
 	void operator=(const CardinalBool& a);
 };
 
-bool operator==(const CardinalBool& lhs, const CardinalBool& rhs);
+bool operator==(const CardinalBool& a, const CardinalBool& b);
 
 bool operator!=(const CardinalBool& a, const CardinalBool& b);
 
@@ -34,4 +34,5 @@ struct Keybinds{
 	SDL_Keycode down;
 	SDL_Keycode left;
 	SDL_Keycode right;
+	SDL_Keycode interact;
 };

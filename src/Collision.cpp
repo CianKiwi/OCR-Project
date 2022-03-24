@@ -111,3 +111,8 @@ RaycastData check_dynamic_collision(Collider* a, Collider* b){
 	data = check_ray({a->pos.x + a->dim.x/2, a->pos.y + a->dim.y/2}, {a->vel.x, a->vel.y}, &expandedCollider);
 	return data;
 }
+
+double calc_distance(Vec2 start, Vec2 end){
+	Vec2 displacement = {end.x - start.x, end.y - start.y};
+	return sqrt((displacement.y * displacement.y) + (displacement.x * displacement.x));
+}
