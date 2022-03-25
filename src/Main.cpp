@@ -20,7 +20,7 @@
 SDL_Window* window;
 SDL_Renderer* rend;
 
-bool DEBUG = true;
+bool DEBUG = false;
 
 SDL_Rect collider_to_rect(const Collider& c){
 	//creates an SDL_Rect from a collider for use in rendering
@@ -33,6 +33,9 @@ void reload_colliders(std::vector<Collider*>& colliders, Room* room, Player& pla
 	colliders.push_back(&player.hitbox);
 	for (Uint64 x = 0; x < room->walls.size(); x++){
 		colliders.push_back(&room->walls[x]);
+	}
+	for (Uint64 x = 0; x < colliders.size(); x++){
+		colliders[x]->world_ID = x;
 	}
 }
 
@@ -114,6 +117,7 @@ void GAME(){
 
 						if (shortestDistance < player.doorInteractDist) {
 
+							if (closest.isVictory) return; //win the game
 							//figure out which direction to move player
 							CardinalBool moveDirection;
 							if (closest.facing == _NORTH) {
@@ -190,8 +194,10 @@ void GAME(){
 				
 				for(Uint64 z = 0; z < contacts.size(); z++){
 					RaycastData data = check_dynamic_collision(colliders[i], colliders[contacts[z].index]);
-					colliders[i]->vel.x += data.contactNormal.x * abs(colliders[i]->vel.x) * (1.0f-data.contactTime);
-					colliders[i]->vel.y += data.contactNormal.y * abs(colliders[i]->vel.y) * (1.0f-data.contactTime);
+					if (!colliders[i]->isTrigger){
+						colliders[i]->vel.x += data.contactNormal.x * abs(colliders[i]->vel.x) * (1.0f-data.contactTime);
+						colliders[i]->vel.y += data.contactNormal.y * abs(colliders[i]->vel.y) * (1.0f-data.contactTime);
+					}
 				}
 				
 				colliders[i]->pos.x += colliders[i]->vel.x * deltaTime;
@@ -218,10 +224,15 @@ void GAME(){
 		SDL_DestroyTexture(setTex);
 
 		//player
+		SDL_Texture* playerTex = SDL_CreateTextureFromSurface(rend, player.playerGraphics.atlas);
 		SDL_Rect playerRect = collider_to_rect(player.hitbox);
+		SDL_Rect playerSrc = player.playerGraphics.get_tile({14, 6});
+		SDL_RenderCopy(rend, playerTex, &playerSrc, &playerRect);
+		SDL_DestroyTexture(playerTex);
+		/*
 		SDL_SetRenderDrawColor(rend, 255,255,255,255);
 		SDL_RenderFillRect(rend, &playerRect);
-		
+		//*/
 		
 		//debug
 		//always do last

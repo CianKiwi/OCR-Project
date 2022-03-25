@@ -133,6 +133,7 @@ Level::Level(){
     }
 	
 	//generate rooms
+	bool placedVictoryDoor = false;
 	int index = 0;
 	for (int r = 0; r < LEVELMAP_SIZE; r++){
 		for (int c = 0; c < LEVELMAP_SIZE; c++){
@@ -147,7 +148,12 @@ Level::Level(){
 					std::cout << map[r][c].data[x];
 				}
 				std::cout << "  " << filename << std::endl;
-				Room room(filename.c_str());
+				Room room(filename.c_str(), !placedVictoryDoor);
+				//place one door in the level as victory door
+				if (!placedVictoryDoor) {
+					std::cout << "victory door in room " << r << "|" << c << std::endl;
+					placedVictoryDoor = true;
+				}
 				rooms.push_back(room);
 				levelMap[r][c] = index;
 				index++;

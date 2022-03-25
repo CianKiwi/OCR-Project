@@ -3,17 +3,19 @@
 Room::Room(){	
 }
 
-Room::Room(const char* source){
+Room::Room(const char* source, bool isVictory){
 	std::ifstream srcFile(source, std::ifstream::in);
 	/*--NOTE: THIS METHOD OF IMPLEMENTING TILEMAPS IS ARBITRARY--*/
 	tilemap.indices.push_back({1,0}); //wall
 	tilemap.indices.push_back({1,1}); //floor
 	tilemap.indices.push_back({1,2}); //door
 	tilemap.indices.push_back({0,1}); //empty
+	tilemap.indices.push_back({1,3}); //victory door
 	char c;
 	Collider w({0, 0}, {0, ROOM_TILE_SIZE}, true, false, false);
 	Door d;
 	int mapX = 0, mapY = 0;
+	bool placedVictoryDoor = false;
 	
 	for (int x = 0; x < TILEMAP_SIZE; x++){
 		for (int y = 0; y < TILEMAP_SIZE; y++){
@@ -80,11 +82,21 @@ Room::Room(const char* source){
 					d.spawnPoint = {w.pos.x + ROOM_TILE_SIZE + 16, w.pos.y + 8};
 					d.facing = _EAST;
 				}
+				if (isVictory && !placedVictoryDoor){
+					d.isVictory = true;
+					tilemap.map[mapX][mapY] = 5;
+					placedVictoryDoor = true;
+				}
+				else{
+					d.isVictory = false;
+					tilemap.map[mapX][mapY] = 3;
+				}
+				
 				doors.push_back(d);
 				//reset collider
 				w.pos.x += w.dim.x;
 				w.dim.x = 0;
-				tilemap.map[mapX][mapY] = 3;
+				
 				mapX++;
 				break;
 			case '-':

@@ -24,11 +24,12 @@ struct SortingData{
 //NOTE: while SDL does have SDL_FRect, a pure c++ version is more portable to other frameworks and programs
 class Collider{
 public:
+	int world_ID; //set when colliders are placed into the world
 	Vec2 pos;
 	Vec2 dim;
 	Vec2 vel;
 	bool isDynamic; //is able to move
-	bool isTrigger; //passed through by other dynamic colliders
+	bool isTrigger; //doesnt cause physical interactions
 	bool isActive;
 	Collider(Vec2 position, Vec2 dimensions, bool active, bool dynamic, bool trigger);
 	Collider(Vec2 position, Vec2 dimensions);

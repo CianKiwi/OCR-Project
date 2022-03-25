@@ -13,6 +13,7 @@ struct Door{
 	Vec2 position; //worldspace position
 	Vec2 spawnPoint; //where the player spawns when entering from another room
 	CardinalBool facing; //which way the door faces in the room (e.g., Western door faces East)
+	bool isVictory;
 };
 
 
@@ -23,6 +24,6 @@ public:
 	std::vector<Door> doors;
 	Tilemap tilemap;
 	
-	Room(const char* source);
+	Room(const char* source, bool isVictory);
 	Room();
 };
