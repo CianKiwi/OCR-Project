@@ -13,6 +13,8 @@ Room::Room(const char* source, bool isVictory){
 	tilemap.indices.push_back({1,3}); //victory door
 	char c;
 	Collider w({0, 0}, {0, ROOM_TILE_SIZE}, true, false, false);
+	Collider eHitbox({ 0,0 }, { 48, 48 }, true, true, false);
+	Enemy enemy(eHitbox);
 	Door d;
 	int mapX = 0, mapY = 0;
 	bool placedVictoryDoor = false;
@@ -48,6 +50,26 @@ Room::Room(const char* source, bool isVictory){
 				}
 				mapX = 0;
 				mapY++;
+				break;
+			case 'X':
+				
+				//floor (and other characters)
+				if (w.dim.x > 0) {
+					//append wall
+					walls.push_back(w);
+					//reset collider
+					w.pos.x += w.dim.x + ROOM_TILE_SIZE;
+					w.dim.x = 0;
+				}
+				else {
+					w.pos.x += ROOM_TILE_SIZE;
+				}
+				//create an enemy
+				enemy.hitbox.pos = { w.pos.x - 56, w.pos.y + 8 };
+				enemies.push_back(enemy);
+
+				tilemap.map[mapX][mapY] = 2;
+				mapX++;
 				break;
 			case 'N':
 			case 'E':

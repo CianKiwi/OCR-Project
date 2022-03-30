@@ -10,7 +10,6 @@ public:
 	Keybinds binds;
 	double moveSpeed;
 	double doorInteractDist = 95;
-	Tileset playerGraphics = Tileset("tex/DungeonTilesetMisc.png", 16, 16);
 	
 	Player(Collider i_hitbox, Keybinds i_keybinds, double i_moveSpeed);
 };

@@ -13,6 +13,7 @@
 #include "Room.h"
 #include "Level.h"
 #include "Structs.h"
+#include "Bullet.h"
 
 #define WINDOW_X 1280
 #define WINDOW_Y 720
@@ -55,12 +56,14 @@ void GAME(){
 	/* PROGRAM START*/
 	SDL_Texture* gameView;
 	std::vector<Collider*> colliders;
+	std::vector<Bullet> bullets;
 	Room* currentRoom;
 	
 	//player stuff
 	Collider hitbox({0, 0}, {32, 48}, true, true, false);
 	Keybinds keys{SDLK_w, SDLK_s, SDLK_a, SDLK_d, SDLK_e};
 	Camera camera(0, 0, WINDOW_X/2, WINDOW_Y/2);
+	Tileset dungeonMisc("tex/DungeonTilesetMisc.png", 16, 16);
 	Player player(hitbox, keys, 3.0f);
 	player.hitbox.pos = {70, 70};
 	colliders.push_back(&player.hitbox);
@@ -118,6 +121,7 @@ void GAME(){
 						if (shortestDistance < player.doorInteractDist) {
 
 							if (closest.isVictory) return; //win the game
+
 							//figure out which direction to move player
 							CardinalBool moveDirection;
 							if (closest.facing == _NORTH) {
@@ -147,6 +151,17 @@ void GAME(){
 							}
 						}
 						break;
+
+				}
+			}
+			else if (e.type == SDL_MOUSEBUTTONDOWN) {
+				switch (e.button.button) {
+				case SDL_BUTTON_LEFT:
+					std::cout << "mouse click" << e.motion.x << "|" << e.motion.y << std::endl;
+					Vec2 dir{ e.motion.x - player.hitbox.pos.x, e.motion.y - player.hitbox.pos.y };
+					Bullet b(player.hitbox.pos, dir, true);
+					bullets.push_back(b);
+					colliders.push_back(&bullets[bullets.size()-1].hitbox);
 				}
 			}
 		}
@@ -198,13 +213,16 @@ void GAME(){
 						colliders[i]->vel.x += data.contactNormal.x * abs(colliders[i]->vel.x) * (1.0f-data.contactTime);
 						colliders[i]->vel.y += data.contactNormal.y * abs(colliders[i]->vel.y) * (1.0f-data.contactTime);
 					}
+					else {
+						//bullets
+						std::cout << colliders[contacts[z].index]->world_ID << std::endl;
+					}
 				}
 				
 				colliders[i]->pos.x += colliders[i]->vel.x * deltaTime;
 				colliders[i]->pos.y += colliders[i]->vel.y * deltaTime;
 			}
 		}
-		
 		
 		/*--RENDER--*/
 		SDL_SetRenderTarget(rend, gameView);
@@ -223,12 +241,30 @@ void GAME(){
 		}
 		SDL_DestroyTexture(setTex);
 
+		SDL_Texture* dungeonMiscTex = SDL_CreateTextureFromSurface(rend, dungeonMisc.atlas);
 		//player
-		SDL_Texture* playerTex = SDL_CreateTextureFromSurface(rend, player.playerGraphics.atlas);
 		SDL_Rect playerRect = collider_to_rect(player.hitbox);
-		SDL_Rect playerSrc = player.playerGraphics.get_tile({14, 6});
-		SDL_RenderCopy(rend, playerTex, &playerSrc, &playerRect);
-		SDL_DestroyTexture(playerTex);
+		SDL_Rect playerSrc = dungeonMisc.get_tile({14, 6});
+		SDL_RenderCopy(rend, dungeonMiscTex, &playerSrc, &playerRect);
+		
+
+		//enemies
+		for (Enemy en : currentRoom->enemies) {
+			SDL_Rect enemyRect = collider_to_rect(en.hitbox);
+			SDL_Rect enemySrc = dungeonMisc.get_tile({ 12, 0 });
+			SDL_RenderCopy(rend, dungeonMiscTex, &enemySrc, &enemyRect);
+		}
+
+		//bullets
+		for (Bullet b : bullets) {
+			std::cout << "bullet" << std::endl;
+			SDL_Rect bulletRect = collider_to_rect(b.hitbox);
+			SDL_SetRenderDrawColor(rend, 255, 0, 255, 255);
+			SDL_RenderFillRect(rend, &bulletRect);
+		}
+
+		SDL_DestroyTexture(dungeonMiscTex);
+
 		/*
 		SDL_SetRenderDrawColor(rend, 255,255,255,255);
 		SDL_RenderFillRect(rend, &playerRect);

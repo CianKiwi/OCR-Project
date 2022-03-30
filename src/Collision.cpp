@@ -116,3 +116,8 @@ double calc_distance(Vec2 start, Vec2 end){
 	Vec2 displacement = {end.x - start.x, end.y - start.y};
 	return sqrt((displacement.y * displacement.y) + (displacement.x * displacement.x));
 }
+
+Vec2 normalize(Vec2 vec) {
+	double mag = calc_distance({ 0, 0 }, vec);
+	return Vec2({vec.x/mag, vec.y/mag});
+}

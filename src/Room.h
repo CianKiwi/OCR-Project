@@ -6,6 +6,7 @@
 #include "Tileset.h"
 #include "Collision.h"
 #include "Structs.h"
+#include "Enemy.h"
 
 const int ROOM_TILE_SIZE = 64;
 
@@ -22,6 +23,7 @@ private:
 public:
 	std::vector<Collider> walls;
 	std::vector<Door> doors;
+	std::vector<Enemy> enemies;
 	Tilemap tilemap;
 	
 	Room(const char* source, bool isVictory);

@@ -43,3 +43,5 @@ RaycastData check_ray(Vec2 start, Vec2 dir, Collider* c);
 RaycastData check_dynamic_collision(Collider* a, Collider* b);
 
 double calc_distance(Vec2 start, Vec2 end);
+
+Vec2 normalize(Vec2 vec);
