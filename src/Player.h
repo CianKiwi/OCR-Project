@@ -9,6 +9,7 @@ public:
 	Collider hitbox;
 	Keybinds binds;
 	double moveSpeed;
+	double sprintMulti = 1.5f;
 	double doorInteractDist = 95;
 	
 	Player(Collider i_hitbox, Keybinds i_keybinds, double i_moveSpeed);

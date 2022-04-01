@@ -35,4 +35,5 @@ struct Keybinds{
 	SDL_Keycode left;
 	SDL_Keycode right;
 	SDL_Keycode interact;
+	SDL_Keycode sprint;
 };

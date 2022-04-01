@@ -22,6 +22,7 @@ SDL_Window* window;
 SDL_Renderer* rend;
 
 bool DEBUG = false;
+int MAX_WORLD_ID = 0;
 
 SDL_Rect collider_to_rect(const Collider& c){
 	//creates an SDL_Rect from a collider for use in rendering
@@ -32,11 +33,13 @@ SDL_Rect collider_to_rect(const Collider& c){
 void reload_colliders(std::vector<Collider*>& colliders, Room* room, Player& player){
 	colliders.clear();
 	colliders.push_back(&player.hitbox);
+	MAX_WORLD_ID = 0;
 	for (Uint64 x = 0; x < room->walls.size(); x++){
 		colliders.push_back(&room->walls[x]);
 	}
 	for (Uint64 x = 0; x < colliders.size(); x++){
-		colliders[x]->world_ID = x;
+		colliders[x]->world_ID = MAX_WORLD_ID+1;
+		MAX_WORLD_ID++;
 	}
 }
 
@@ -56,17 +59,16 @@ void GAME(){
 	/* PROGRAM START*/
 	SDL_Texture* gameView;
 	std::vector<Collider*> colliders;
-	std::vector<Bullet> bullets;
+	//std::vector<Bullet> bullets;
 	Room* currentRoom;
 	
 	//player stuff
 	Collider hitbox({0, 0}, {32, 48}, true, true, false);
-	Keybinds keys{SDLK_w, SDLK_s, SDLK_a, SDLK_d, SDLK_e};
+	Keybinds keys{SDLK_w, SDLK_s, SDLK_a, SDLK_d, SDLK_q, SDLK_LSHIFT};
 	Camera camera(0, 0, WINDOW_X/2, WINDOW_Y/2);
 	Tileset dungeonMisc("tex/DungeonTilesetMisc.png", 16, 16);
-	Player player(hitbox, keys, 3.0f);
+	Player player(hitbox, keys, 2.5f);
 	player.hitbox.pos = {70, 70};
-	colliders.push_back(&player.hitbox);
 	camera.set_pos(player.hitbox.pos.x + player.hitbox.dim.x/2, player.hitbox.pos.y + player.hitbox.dim.y);
 	
 	//room stuff
@@ -85,6 +87,7 @@ void GAME(){
 	Uint64 NOW = SDL_GetPerformanceCounter();
 	Uint64 LAST = 0;
 	double deltaTime = 0;
+	double interactDelay = 100.0f;
 	while(e.type != SDL_QUIT){
 		//calculate delta time
 		LAST = NOW;
@@ -93,6 +96,7 @@ void GAME(){
 		
 		/*--INPUT--*/
 		bool quit = false;
+		if (interactDelay >= 0) interactDelay -= deltaTime;
 		while(SDL_PollEvent(&e)){
 			if (e.type == SDL_QUIT){
 				quit = true;
@@ -103,57 +107,10 @@ void GAME(){
 						DEBUG = !DEBUG; //flip on or off
 						std::cout << "DEBUG: " << (DEBUG ? "ON" : "OFF") << std::endl;
 						break;
-					case SDLK_e: //TODO: figure out how to use custom keybind here
-						//which door is the player interacting with
-						Door closest = currentRoom->doors[0];
-						double distToDoor = calc_distance(player.hitbox.pos, closest.position);;
-						double shortestDistance = distToDoor;
-
-						for (int x = 1; x < currentRoom->doors.size(); x++){
-							distToDoor = calc_distance(player.hitbox.pos, currentRoom->doors[x].position);
-							
-							if (distToDoor < shortestDistance){
-								closest = currentRoom->doors[x];
-								shortestDistance = distToDoor;
-							}
-						}
-
-						if (shortestDistance < player.doorInteractDist) {
-
-							if (closest.isVictory) return; //win the game
-
-							//figure out which direction to move player
-							CardinalBool moveDirection;
-							if (closest.facing == _NORTH) {
-								rIndex.r+=1; //player moves south
-								moveDirection = _SOUTH;
-							}
-							else if (closest.facing == _EAST) {
-								rIndex.c-=1; //player moves west
-								moveDirection = _WEST;
-							}
-							else if (closest.facing == _SOUTH) {
-								rIndex.r-=1; //player moves north
-								moveDirection = _NORTH;
-							}
-							else if (closest.facing == _WEST) {
-								rIndex.c+=1; //player moves east
-								moveDirection = _EAST;
-							}
-							//change room
-							currentRoom = level.get_room(rIndex.r, rIndex.c);
-							reload_colliders(colliders, currentRoom, player);
-							//set player position
-							for (Door d : currentRoom->doors) {
-								if (d.facing == moveDirection) {
-									player.hitbox.pos = d.spawnPoint;
-								}
-							}
-						}
-						break;
-
+					
 				}
 			}
+			/*
 			else if (e.type == SDL_MOUSEBUTTONDOWN) {
 				switch (e.button.button) {
 				case SDL_BUTTON_LEFT:
@@ -161,9 +118,10 @@ void GAME(){
 					Vec2 dir{ e.motion.x - player.hitbox.pos.x, e.motion.y - player.hitbox.pos.y };
 					Bullet b(player.hitbox.pos, dir, true);
 					bullets.push_back(b);
-					colliders.push_back(&bullets[bullets.size()-1].hitbox);
+					add_collider(colliders, &bullets[bullets.size()-1].hitbox);
 				}
 			}
+			//*/
 		}
 		if(quit) break;
 
@@ -173,11 +131,67 @@ void GAME(){
 		const Uint8* keys = SDL_GetKeyboardState(0); 
 
 		//movement (normalised)
+		bool isSprinting = keys[SDL_GetScancodeFromKey(player.binds.sprint)];
+		std::cout << isSprinting << std::endl;
+		double speed = player.moveSpeed * (isSprinting ? player.sprintMulti : 1);
+		
 		double playerXmov = (keys[SDL_GetScancodeFromKey(player.binds.left)] ? -1 : 0) + (keys[SDL_GetScancodeFromKey(player.binds.right)] ? 1 : 0);
 		double playerYmov = (keys[SDL_GetScancodeFromKey(player.binds.up)] ? -1 : 0) + (keys[SDL_GetScancodeFromKey(player.binds.down)] ? 1 : 0);
 		double playerMovMagnitude = abs(sqrt(playerXmov * playerXmov + playerYmov * playerYmov)); //pythagoras
-		player.hitbox.vel.x = playerXmov * player.moveSpeed / ((playerMovMagnitude > 0.0f) ? playerMovMagnitude : 1);
-		player.hitbox.vel.y = playerYmov * player.moveSpeed / ((playerMovMagnitude > 0.0f) ? playerMovMagnitude : 1);
+		player.hitbox.vel.x = playerXmov * speed / ((playerMovMagnitude > 0.0f) ? playerMovMagnitude : 1);
+		player.hitbox.vel.y = playerYmov * speed / ((playerMovMagnitude > 0.0f) ? playerMovMagnitude : 1);
+		
+		if (keys[SDL_GetScancodeFromKey(player.binds.interact)] && interactDelay <= 0){
+			interactDelay = 100.0f;
+			//which door is the player interacting with
+			Door closest = currentRoom->doors[0];
+			double distToDoor = calc_distance(player.hitbox.pos, closest.position);;
+			double shortestDistance = distToDoor;
+
+			for (int x = 1; x < currentRoom->doors.size(); x++){
+				distToDoor = calc_distance(player.hitbox.pos, currentRoom->doors[x].position);
+				
+				if (distToDoor < shortestDistance){
+					closest = currentRoom->doors[x];
+					shortestDistance = distToDoor;
+				}
+			}
+
+			if (shortestDistance < player.doorInteractDist) {
+
+				if (closest.isVictory) return; //win the game
+
+				//figure out which direction to move player
+				CardinalBool moveDirection;
+				if (closest.facing == _NORTH) {
+					rIndex.r+=1; //player moves south
+					moveDirection = _SOUTH;
+				}
+				else if (closest.facing == _EAST) {
+					rIndex.c-=1; //player moves west
+					moveDirection = _WEST;
+				}
+				else if (closest.facing == _SOUTH) {
+					rIndex.r-=1; //player moves north
+					moveDirection = _NORTH;
+				}
+				else if (closest.facing == _WEST) {
+					rIndex.c+=1; //player moves east
+					moveDirection = _EAST;
+				}
+				//change room
+				currentRoom = level.get_room(rIndex.r, rIndex.c);
+				reload_colliders(colliders, currentRoom, player);
+				//set player position
+				for (Door d : currentRoom->doors) {
+					if (d.facing == moveDirection) {
+						player.hitbox.pos = d.spawnPoint;
+					}
+				}
+			}
+		}
+
+		
 		
 		camera.set_pos(player.hitbox.pos.x + player.hitbox.dim.x/2, player.hitbox.pos.y + player.hitbox.dim.y/2);
 		//keep texture within the bounds of the game view
@@ -214,8 +228,7 @@ void GAME(){
 						colliders[i]->vel.y += data.contactNormal.y * abs(colliders[i]->vel.y) * (1.0f-data.contactTime);
 					}
 					else {
-						//bullets
-						std::cout << colliders[contacts[z].index]->world_ID << std::endl;
+						//triggers (mainly bullets)
 					}
 				}
 				
@@ -254,22 +267,20 @@ void GAME(){
 			SDL_Rect enemySrc = dungeonMisc.get_tile({ 12, 0 });
 			SDL_RenderCopy(rend, dungeonMiscTex, &enemySrc, &enemyRect);
 		}
-
+		
+		/*
 		//bullets
 		for (Bullet b : bullets) {
-			std::cout << "bullet" << std::endl;
+			std::cout << b.hitbox.world_ID << "|";
 			SDL_Rect bulletRect = collider_to_rect(b.hitbox);
 			SDL_SetRenderDrawColor(rend, 255, 0, 255, 255);
 			SDL_RenderFillRect(rend, &bulletRect);
 		}
-
-		SDL_DestroyTexture(dungeonMiscTex);
-
-		/*
-		SDL_SetRenderDrawColor(rend, 255,255,255,255);
-		SDL_RenderFillRect(rend, &playerRect);
+		std::cout << std::endl;
 		//*/
 		
+		SDL_DestroyTexture(dungeonMiscTex);
+
 		//debug
 		//always do last
 		if(DEBUG){
