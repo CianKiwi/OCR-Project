@@ -135,6 +135,8 @@ Level::Level(){
 	//generate rooms
 	bool placedVictoryDoor = false;
 	int index = 0;
+	std::random_device generator;
+	std::uniform_int_distribution<int> distribution(1, 2);
 	for (int r = 0; r < LEVELMAP_SIZE; r++){
 		for (int c = 0; c < LEVELMAP_SIZE; c++){
 			if (map[r][c] != _EMPTY){
@@ -143,7 +145,10 @@ Level::Level(){
 				if (map[r][c].E) filename += "E";
 				if (map[r][c].S) filename += "S";
 				if (map[r][c].W) filename += "W";
-				filename += "_1.txt"; //only use 1 variation at the moment
+				int variation = distribution(generator);
+				filename += "_";
+				filename += char(variation + 48);
+				filename += ".txt";
 				for (int x = 0; x < 4; x++){
 					std::cout << map[r][c].data[x];
 				}
