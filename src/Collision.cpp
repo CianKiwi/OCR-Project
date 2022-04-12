@@ -121,3 +121,10 @@ Vec2 normalize(Vec2 vec) {
 	double mag = calc_distance({ 0, 0 }, vec);
 	return Vec2({vec.x/mag, vec.y/mag});
 }
+
+bool check_point(Vec2 point, Collider* c){
+	return (point.x > c->pos.x &&
+			point.x < c->pos.x + c->dim.x &&
+			point.y > c->pos.y &&
+			point.y < c->pos.y + c->dim.y);
+}

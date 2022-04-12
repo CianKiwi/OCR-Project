@@ -14,7 +14,7 @@ Room::Room(const char* source, bool isVictory){
 	char c;
 	Collider w({0, 0}, {0, ROOM_TILE_SIZE}, true, false, false);
 	Collider eHitbox({ 0,0 }, { 48, 48 }, true, true, false);
-	Enemy enemy(eHitbox);
+	Enemy enemy(eHitbox, 3);
 	Door d;
 	int mapX = 0, mapY = 0;
 	bool placedVictoryDoor = false;

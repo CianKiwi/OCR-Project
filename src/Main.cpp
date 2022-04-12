@@ -57,15 +57,16 @@ void GAME(){
 	}
 	
 	/* PROGRAM START*/
+	Vec2 mouseWorldPos = {0,0};
 	SDL_Texture* gameView;
 	std::vector<Collider*> colliders;
-	//std::vector<Bullet> bullets;
+	std::vector<Bullet> bullets;
 	Room* currentRoom;
 	
 	//player stuff
 	Collider hitbox({0, 0}, {32, 48}, true, true, false);
 	Keybinds keys{SDLK_w, SDLK_s, SDLK_a, SDLK_d, SDLK_q, SDLK_LSHIFT};
-	Camera camera(0, 0, WINDOW_X/2, WINDOW_Y/2);
+	Camera camera(0, 0, 800, 450);
 	Tileset dungeonMisc("tex/DungeonTilesetMisc.png", 16, 16);
 	Player player(hitbox, keys, 2.5f);
 	player.hitbox.pos = {70, 70};
@@ -97,6 +98,15 @@ void GAME(){
 		/*--INPUT--*/
 		bool quit = false;
 		if (interactDelay >= 0) interactDelay -= deltaTime;
+		SDL_Point mouseWindowPos;
+		Uint32 mouseButtons = SDL_GetMouseState(&mouseWindowPos.x, &mouseWindowPos.y);
+		mouseWorldPos.x = mouseWindowPos.x;
+		mouseWorldPos.y = mouseWindowPos.y;
+		mouseWorldPos.x = mouseWorldPos.x * ((double)camera.view.w / WINDOW_X);
+		mouseWorldPos.y = mouseWorldPos.y * ((double)camera.view.h / WINDOW_Y);
+		mouseWorldPos.x += camera.view.x;
+		mouseWorldPos.y += camera.view.y;
+		std::cout << mouseWorldPos.x << "|" << mouseWorldPos.y << std::endl;
 		while(SDL_PollEvent(&e)){
 			if (e.type == SDL_QUIT){
 				quit = true;
@@ -110,15 +120,14 @@ void GAME(){
 					
 				}
 			}
-			/*
+			///*
 			else if (e.type == SDL_MOUSEBUTTONDOWN) {
 				switch (e.button.button) {
 				case SDL_BUTTON_LEFT:
 					std::cout << "mouse click" << e.motion.x << "|" << e.motion.y << std::endl;
-					Vec2 dir{ e.motion.x - player.hitbox.pos.x, e.motion.y - player.hitbox.pos.y };
-					Bullet b(player.hitbox.pos, dir, true);
+					Vec2 dir{ mouseWorldPos.x - player.hitbox.pos.x, mouseWorldPos.y - player.hitbox.pos.y };
+					Bullet b(player.hitbox.pos, dir, 15); //use weapon speed once weapon class is implemented
 					bullets.push_back(b);
-					add_collider(colliders, &bullets[bullets.size()-1].hitbox);
 				}
 			}
 			//*/
@@ -132,7 +141,6 @@ void GAME(){
 
 		//movement (normalised)
 		bool isSprinting = keys[SDL_GetScancodeFromKey(player.binds.sprint)];
-		std::cout << isSprinting << std::endl;
 		double speed = player.moveSpeed * (isSprinting ? player.sprintMulti : 1);
 		
 		double playerXmov = (keys[SDL_GetScancodeFromKey(player.binds.left)] ? -1 : 0) + (keys[SDL_GetScancodeFromKey(player.binds.right)] ? 1 : 0);
@@ -141,6 +149,7 @@ void GAME(){
 		player.hitbox.vel.x = playerXmov * speed / ((playerMovMagnitude > 0.0f) ? playerMovMagnitude : 1);
 		player.hitbox.vel.y = playerYmov * speed / ((playerMovMagnitude > 0.0f) ? playerMovMagnitude : 1);
 		
+		//interact
 		if (keys[SDL_GetScancodeFromKey(player.binds.interact)] && interactDelay <= 0){
 			interactDelay = 100.0f;
 			//which door is the player interacting with
@@ -203,6 +212,7 @@ void GAME(){
 		if(camera.y + camera.view.h/2 > texDim.y) camera.set_pos(camera.x, texDim.y - camera.view.h/2);
 		
 		/*--COLLISION--*/
+		std::vector<int> markedForDeletion; //used to remove from vectors AFTER iterating over them, to prevent segfaults
 		for(Uint64 i = 0; i < colliders.size(); i++){
 			if(colliders[i]->isActive && colliders[i]->isDynamic){
 				std::vector<SortingData> contacts; //check "Collision.h" for SortingData definition
@@ -227,14 +237,43 @@ void GAME(){
 						colliders[i]->vel.x += data.contactNormal.x * abs(colliders[i]->vel.x) * (1.0f-data.contactTime);
 						colliders[i]->vel.y += data.contactNormal.y * abs(colliders[i]->vel.y) * (1.0f-data.contactTime);
 					}
-					else {
-						//triggers (mainly bullets)
-					}
 				}
 				
 				colliders[i]->pos.x += colliders[i]->vel.x * deltaTime;
 				colliders[i]->pos.y += colliders[i]->vel.y * deltaTime;
 			}
+			
+			//bullets movement
+			for(Uint64 i = 0; i < bullets.size(); i++){
+				bullets[i].pos.x += bullets[i].vel.x * deltaTime;
+				bullets[i].pos.y += bullets[i].vel.y * deltaTime;
+			}
+			markedForDeletion.clear();
+			for (Uint64 x = 1; x < bullets.size(); x++) {//player is always first collider
+				if (check_point(bullets[x].pos, colliders[i])){
+					markedForDeletion.push_back(x);
+				}
+			}
+			for (Uint64 i = 0; i < markedForDeletion.size(); i++){
+			bullets.erase(bullets.begin() + markedForDeletion[i]);
+			}
+		}
+		
+		//bullets hit enemies
+		markedForDeletion.clear();
+		for (Uint64 x = 0; x < currentRoom->enemies.size(); x++){
+			for (Uint64 y = 0; y < bullets.size(); y++){
+				if (check_point(bullets[y].pos, &currentRoom->enemies[x].hitbox)){
+					currentRoom->enemies[x].HP -= 1; //use weapon damage when weapon class is implemented
+					if (currentRoom->enemies[x].HP <= 0){
+						markedForDeletion.push_back(x);
+						break; //next enemy. this one is already dead
+					}
+				}
+			}
+		}
+		for (Uint64 i = 0; i < markedForDeletion.size(); i++){
+			currentRoom->enemies.erase(currentRoom->enemies.begin() + markedForDeletion[i]);
 		}
 		
 		/*--RENDER--*/
@@ -268,15 +307,13 @@ void GAME(){
 			SDL_RenderCopy(rend, dungeonMiscTex, &enemySrc, &enemyRect);
 		}
 		
-		/*
+		///*
 		//bullets
 		for (Bullet b : bullets) {
-			std::cout << b.hitbox.world_ID << "|";
-			SDL_Rect bulletRect = collider_to_rect(b.hitbox);
+			SDL_Rect bulletRect = {b.pos.x-3, b.pos.y-3, 6, 6};
 			SDL_SetRenderDrawColor(rend, 255, 0, 255, 255);
 			SDL_RenderFillRect(rend, &bulletRect);
 		}
-		std::cout << std::endl;
 		//*/
 		
 		SDL_DestroyTexture(dungeonMiscTex);
@@ -292,6 +329,8 @@ void GAME(){
 					SDL_RenderFillRect(rend, &cRect);
 				}
 			}
+			SDL_SetRenderDrawColor(rend, 255, 0, 0, 255);
+			SDL_RenderDrawLine(rend, player.hitbox.pos.x, player.hitbox.pos.y, mouseWorldPos.x, mouseWorldPos.y);
 			SDL_SetRenderDrawBlendMode(rend, SDL_BLENDMODE_NONE);
 		}
 		

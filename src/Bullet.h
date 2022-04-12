@@ -3,9 +3,8 @@
 
 class Bullet {
 public:
-	Collider hitbox;
-	bool isFriendly;
-	double speed = 15;
-
-	Bullet(Vec2 position, Vec2 direction, bool i_isFriendly);
+	Vec2 pos;
+	Vec2 vel;
+	
+	Bullet(Vec2 position, Vec2 direction, double speed);
 };

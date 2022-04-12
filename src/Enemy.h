@@ -5,7 +5,8 @@
 class Enemy {
 public:
 	Collider hitbox;
-
-	Enemy(Collider i_hitbox);
+	int HP = 1;
+	
+	Enemy(Collider i_hitbox, int health);
 	Enemy();
 };
