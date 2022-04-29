@@ -100,13 +100,12 @@ void GAME(){
 		if (interactDelay >= 0) interactDelay -= deltaTime;
 		SDL_Point mouseWindowPos;
 		Uint32 mouseButtons = SDL_GetMouseState(&mouseWindowPos.x, &mouseWindowPos.y);
-		mouseWorldPos.x = mouseWindowPos.x;
-		mouseWorldPos.y = mouseWindowPos.y;
-		mouseWorldPos.x = mouseWorldPos.x * ((double)camera.view.w / WINDOW_X);
-		mouseWorldPos.y = mouseWorldPos.y * ((double)camera.view.h / WINDOW_Y);
+		mouseWorldPos = {mouseWindowPos.x, mouseWindowPos.y};
+		mouseWorldPos.x *= ((double)camera.view.w / WINDOW_X);
+		mouseWorldPos.y *= ((double)camera.view.h / WINDOW_Y);
 		mouseWorldPos.x += camera.view.x;
 		mouseWorldPos.y += camera.view.y;
-		std::cout << mouseWorldPos.x << "|" << mouseWorldPos.y << std::endl;
+
 		while(SDL_PollEvent(&e)){
 			if (e.type == SDL_QUIT){
 				quit = true;
@@ -124,9 +123,9 @@ void GAME(){
 			else if (e.type == SDL_MOUSEBUTTONDOWN) {
 				switch (e.button.button) {
 				case SDL_BUTTON_LEFT:
-					std::cout << "mouse click" << e.motion.x << "|" << e.motion.y << std::endl;
 					Vec2 dir{ mouseWorldPos.x - player.hitbox.pos.x, mouseWorldPos.y - player.hitbox.pos.y };
-					Bullet b(player.hitbox.pos, dir, 15); //use weapon speed once weapon class is implemented
+					//bullet speed is confused...
+					Bullet b(player.hitbox.pos, dir, 0.5f); //use weapon speed once weapon class is implemented
 					bullets.push_back(b);
 				}
 			}
@@ -191,6 +190,7 @@ void GAME(){
 				//change room
 				currentRoom = level.get_room(rIndex.r, rIndex.c);
 				reload_colliders(colliders, currentRoom, player);
+				bullets.clear();
 				//set player position
 				for (Door d : currentRoom->doors) {
 					if (d.facing == moveDirection) {
@@ -212,7 +212,9 @@ void GAME(){
 		if(camera.y + camera.view.h/2 > texDim.y) camera.set_pos(camera.x, texDim.y - camera.view.h/2);
 		
 		/*--COLLISION--*/
-		std::vector<int> markedForDeletion; //used to remove from vectors AFTER iterating over them, to prevent segfaults
+		std::vector<int> enemiesToDelete; //used to remove from vectors AFTER iterating over them, to prevent segfaults
+		std::vector<int> bulletsToDelete;
+		
 		for(Uint64 i = 0; i < colliders.size(); i++){
 			if(colliders[i]->isActive && colliders[i]->isDynamic){
 				std::vector<SortingData> contacts; //check "Collision.h" for SortingData definition
@@ -238,42 +240,47 @@ void GAME(){
 						colliders[i]->vel.y += data.contactNormal.y * abs(colliders[i]->vel.y) * (1.0f-data.contactTime);
 					}
 				}
-				
 				colliders[i]->pos.x += colliders[i]->vel.x * deltaTime;
 				colliders[i]->pos.y += colliders[i]->vel.y * deltaTime;
 			}
 			
 			//bullets movement
 			for(Uint64 i = 0; i < bullets.size(); i++){
-				bullets[i].pos.x += bullets[i].vel.x * deltaTime;
-				bullets[i].pos.y += bullets[i].vel.y * deltaTime;
+				bullets[i].pos.x += bullets[i].vel.x * deltaTime * deltaTime;
+				bullets[i].pos.y += bullets[i].vel.y * deltaTime * deltaTime;
 			}
-			markedForDeletion.clear();
-			for (Uint64 x = 1; x < bullets.size(); x++) {//player is always first collider
-				if (check_point(bullets[x].pos, colliders[i])){
-					markedForDeletion.push_back(x);
+			bulletsToDelete.clear();
+			for (Uint64 x = 0; x < bullets.size(); x++) {//player is always first collider so skip
+				if (colliders[i]->world_ID != player.hitbox.world_ID && check_point(bullets[x].pos, colliders[i])){
+					bulletsToDelete.push_back(x);
 				}
 			}
-			for (Uint64 i = 0; i < markedForDeletion.size(); i++){
-			bullets.erase(bullets.begin() + markedForDeletion[i]);
+			
+			for (Uint64 i = 0; i < bulletsToDelete.size(); i++){
+			bullets.erase(bullets.begin() + bulletsToDelete[i]);
 			}
 		}
 		
 		//bullets hit enemies
-		markedForDeletion.clear();
+		enemiesToDelete.clear();
+		bulletsToDelete.clear();
 		for (Uint64 x = 0; x < currentRoom->enemies.size(); x++){
 			for (Uint64 y = 0; y < bullets.size(); y++){
 				if (check_point(bullets[y].pos, &currentRoom->enemies[x].hitbox)){
 					currentRoom->enemies[x].HP -= 1; //use weapon damage when weapon class is implemented
+					bulletsToDelete.push_back(y);
 					if (currentRoom->enemies[x].HP <= 0){
-						markedForDeletion.push_back(x);
+						enemiesToDelete.push_back(x);
 						break; //next enemy. this one is already dead
 					}
 				}
 			}
 		}
-		for (Uint64 i = 0; i < markedForDeletion.size(); i++){
-			currentRoom->enemies.erase(currentRoom->enemies.begin() + markedForDeletion[i]);
+		for (Uint64 i = 0; i < bulletsToDelete.size(); i++){
+			bullets.erase(bullets.begin() + bulletsToDelete[i]);
+		}
+		for (Uint64 i = 0; i < enemiesToDelete.size(); i++){
+			currentRoom->enemies.erase(currentRoom->enemies.begin() + enemiesToDelete[i]);
 		}
 		
 		/*--RENDER--*/
