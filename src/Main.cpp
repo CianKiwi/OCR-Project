@@ -44,17 +44,8 @@ void reload_colliders(std::vector<Collider*>& colliders, Room* room, Player& pla
 }
 
 
-void GAME(){
-	/*BOILERPLATE*/
-	std::cout << "setting up required data" << std::endl;
-	SDL_Init(SDL_INIT_VIDEO);
-	IMG_Init(IMG_INIT_JPG|IMG_INIT_PNG);
-	window = SDL_CreateWindow("H446 GAME", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_X, WINDOW_Y, 0);
-	rend = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-	if(!window || !rend){
-		std::cout << "error creating window or renderer" << std::endl;
-		return;
-	}
+void GAME(SDL_Window* window, SDL_Renderer* rend){
+	
 	
 	/* PROGRAM START*/
 	Vec2 mouseWorldPos = {0,0};
@@ -68,7 +59,8 @@ void GAME(){
 	Keybinds keys{SDLK_w, SDLK_s, SDLK_a, SDLK_d, SDLK_q, SDLK_LSHIFT};
 	Camera camera(0, 0, 800, 450);
 	Tileset dungeonMisc("tex/DungeonTilesetMisc.png", 16, 16);
-	Player player(hitbox, keys, 2.5f);
+	Weapon weapon("default weapon", 1, 15, 400, 10); //damage, fireRate, distance, speed
+	Player player(hitbox, keys, weapon, 2.5f);
 	player.hitbox.pos = {70, 70};
 	camera.set_pos(player.hitbox.pos.x + player.hitbox.dim.x/2, player.hitbox.pos.y + player.hitbox.dim.y);
 	
@@ -106,6 +98,8 @@ void GAME(){
 		mouseWorldPos.x += camera.view.x;
 		mouseWorldPos.y += camera.view.y;
 
+		player.weapon.timeSinceFired += deltaTime;
+
 		while(SDL_PollEvent(&e)){
 			if (e.type == SDL_QUIT){
 				quit = true;
@@ -123,10 +117,13 @@ void GAME(){
 			else if (e.type == SDL_MOUSEBUTTONDOWN) {
 				switch (e.button.button) {
 				case SDL_BUTTON_LEFT:
-					Vec2 dir{ mouseWorldPos.x - player.hitbox.pos.x, mouseWorldPos.y - player.hitbox.pos.y };
-					//bullet speed is confused...
-					Bullet b(player.hitbox.pos, dir, 0.5f); //use weapon speed once weapon class is implemented
-					bullets.push_back(b);
+					Vec2 dir{ mouseWorldPos.x - (player.hitbox.pos.x + player.hitbox.dim.x/2), mouseWorldPos.y - (player.hitbox.pos.y + player.hitbox.dim.y/2) };
+					
+					if(player.weapon.timeSinceFired >= player.weapon.fireRate){
+						Bullet b({player.hitbox.pos.x + player.hitbox.dim.x/2, player.hitbox.pos.y + player.hitbox.dim.y/2}, dir, player.weapon.bulletSpeed, player.weapon.bulletDistance, player.weapon.damage); //use weapon speed once weapon class is implemented
+						bullets.push_back(b);
+						player.weapon.timeSinceFired = 0;
+					}
 				}
 			}
 			//*/
@@ -215,6 +212,14 @@ void GAME(){
 		std::vector<int> enemiesToDelete; //used to remove from vectors AFTER iterating over them, to prevent segfaults
 		std::vector<int> bulletsToDelete;
 		
+		//bullets movement
+		for(Uint64 i = 0; i < bullets.size(); i++){
+			bullets[i].distanceTravelled += calc_distance(bullets[i].pos, {bullets[i].pos.x + bullets[i].vel.x * deltaTime, bullets[i].pos.y + bullets[i].vel.y * deltaTime});
+			bullets[i].pos.x += bullets[i].vel.x * deltaTime;
+			bullets[i].pos.y += bullets[i].vel.y * deltaTime;
+			
+		}
+
 		for(Uint64 i = 0; i < colliders.size(); i++){
 			if(colliders[i]->isActive && colliders[i]->isDynamic){
 				std::vector<SortingData> contacts; //check "Collision.h" for SortingData definition
@@ -244,30 +249,27 @@ void GAME(){
 				colliders[i]->pos.y += colliders[i]->vel.y * deltaTime;
 			}
 			
-			//bullets movement
-			for(Uint64 i = 0; i < bullets.size(); i++){
-				bullets[i].pos.x += bullets[i].vel.x * deltaTime * deltaTime;
-				bullets[i].pos.y += bullets[i].vel.y * deltaTime * deltaTime;
-			}
 			bulletsToDelete.clear();
 			for (Uint64 x = 0; x < bullets.size(); x++) {//player is always first collider so skip
-				if (colliders[i]->world_ID != player.hitbox.world_ID && check_point(bullets[x].pos, colliders[i])){
+				if (bullets[x].distanceTravelled >= bullets[x].maxDistance || colliders[i]->world_ID != player.hitbox.world_ID && check_point(bullets[x].pos, colliders[i])){
 					bulletsToDelete.push_back(x);
 				}
 			}
 			
 			for (Uint64 i = 0; i < bulletsToDelete.size(); i++){
-			bullets.erase(bullets.begin() + bulletsToDelete[i]);
+				bullets.erase(bullets.begin() + bulletsToDelete[i]);
 			}
 		}
 		
+		
+	
 		//bullets hit enemies
 		enemiesToDelete.clear();
 		bulletsToDelete.clear();
 		for (Uint64 x = 0; x < currentRoom->enemies.size(); x++){
 			for (Uint64 y = 0; y < bullets.size(); y++){
 				if (check_point(bullets[y].pos, &currentRoom->enemies[x].hitbox)){
-					currentRoom->enemies[x].HP -= 1; //use weapon damage when weapon class is implemented
+					currentRoom->enemies[x].HP -= bullets[y].damage;
 					bulletsToDelete.push_back(y);
 					if (currentRoom->enemies[x].HP <= 0){
 						enemiesToDelete.push_back(x);
@@ -318,7 +320,7 @@ void GAME(){
 		//bullets
 		for (Bullet b : bullets) {
 			SDL_Rect bulletRect = {b.pos.x-3, b.pos.y-3, 6, 6};
-			SDL_SetRenderDrawColor(rend, 255, 0, 255, 255);
+			SDL_SetRenderDrawColor(rend, 235, 235, 255, 255);
 			SDL_RenderFillRect(rend, &bulletRect);
 		}
 		//*/
@@ -362,7 +364,19 @@ void GAME(){
 
 int main(int argc, char** argv){
 	std::cout << "starting game" << std::endl;
-	GAME();
+	
+	/*BOILERPLATE*/
+	std::cout << "setting up required data" << std::endl;
+	SDL_Init(SDL_INIT_VIDEO);
+	IMG_Init(IMG_INIT_JPG|IMG_INIT_PNG);
+	window = SDL_CreateWindow("H446 GAME", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_X, WINDOW_Y, 0);
+	rend = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+	if(!window || !rend){
+		std::cout << "error creating window or renderer" << std::endl;
+		return 0;
+	}
+	
+	GAME(window, rend);
 	std::cout << "finishing game" << std::endl;
 	return 0;
 }
