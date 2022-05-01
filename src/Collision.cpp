@@ -27,7 +27,7 @@ RaycastData::RaycastData() {
 	contactTime = 0;
 };
 
-bool check_collision(Collider* a, Collider* b){
+bool check_overlap(Collider* a, Collider* b){
 
 	return (a->pos.x < b->pos.x + b->dim.x &&
 	a->pos.x + a->dim.x > b->pos.x &&

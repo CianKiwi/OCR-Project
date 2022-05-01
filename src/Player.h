@@ -14,6 +14,7 @@ public:
 	double sprintMulti = 1.5f;
 	double doorInteractDist = 95;
 	int health = 5;
+	bool isSprinting = false;
 	
 	Player(Collider i_hitbox, Keybinds i_keybinds, Weapon i_weapon, double i_moveSpeed);
 };

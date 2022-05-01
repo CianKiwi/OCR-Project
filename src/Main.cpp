@@ -37,14 +37,25 @@ void reload_colliders(std::vector<Collider*>& colliders, Room* room, Player& pla
 	for (Uint64 x = 0; x < room->walls.size(); x++){
 		colliders.push_back(&room->walls[x]);
 	}
+	for (Uint64 x = 0; x < room->enemies.size(); x++){
+		colliders.push_back(&room->enemies[x].hitbox);
+	}
 	for (Uint64 x = 0; x < colliders.size(); x++){
 		colliders[x]->world_ID = MAX_WORLD_ID+1;
 		MAX_WORLD_ID++;
 	}
 }
 
+void generate_new_level(Level& level, std::vector<Collider*>& colliders, Room*& room, Player& player, int& levelCount){
+	level = Level();
+	room = level.get_room(8, 8);
+	reload_colliders(colliders, room, player);
+	player.hitbox.pos = {70, 70};
+	levelCount++;
+	
+}
 
-void GAME(SDL_Window* window, SDL_Renderer* rend){
+int GAME(SDL_Window* window, SDL_Renderer* rend){
 	
 	
 	/* PROGRAM START*/
@@ -53,13 +64,14 @@ void GAME(SDL_Window* window, SDL_Renderer* rend){
 	std::vector<Collider*> colliders;
 	std::vector<Bullet> bullets;
 	Room* currentRoom;
-	
+	Level level; //automatically generates a level
+	int levelCount = 1;
 	//player stuff
 	Collider hitbox({0, 0}, {32, 48}, true, true, false);
 	Keybinds keys{SDLK_w, SDLK_s, SDLK_a, SDLK_d, SDLK_q, SDLK_LSHIFT};
 	Camera camera(0, 0, 800, 450);
 	Tileset dungeonMisc("tex/DungeonTilesetMisc.png", 16, 16);
-	Weapon weapon("default weapon", 1, 15, 400, 10); //damage, fireRate, distance, speed
+	Weapon weapon("default weapon", 3, 15, 345, 10); //damage, fireRate, distance, speed
 	Player player(hitbox, keys, weapon, 2.5f);
 	player.hitbox.pos = {70, 70};
 	camera.set_pos(player.hitbox.pos.x + player.hitbox.dim.x/2, player.hitbox.pos.y + player.hitbox.dim.y);
@@ -67,7 +79,6 @@ void GAME(SDL_Window* window, SDL_Renderer* rend){
 	//room stuff
 	Index2 rIndex = {8,8};
 	Tileset dungeonSet("tex/myTestTileset.png", 16, 16);
-	Level level;
 	currentRoom = level.get_room(rIndex.r, rIndex.c);
 	reload_colliders(colliders, currentRoom, player);
 	
@@ -110,7 +121,10 @@ void GAME(SDL_Window* window, SDL_Renderer* rend){
 						DEBUG = !DEBUG; //flip on or off
 						std::cout << "DEBUG: " << (DEBUG ? "ON" : "OFF") << std::endl;
 						break;
-					
+					case SDLK_p:
+						//go to next level
+						bullets.clear();
+						generate_new_level(level, colliders, currentRoom, player, levelCount);
 				}
 			}
 			///*
@@ -119,7 +133,7 @@ void GAME(SDL_Window* window, SDL_Renderer* rend){
 				case SDL_BUTTON_LEFT:
 					Vec2 dir{ mouseWorldPos.x - (player.hitbox.pos.x + player.hitbox.dim.x/2), mouseWorldPos.y - (player.hitbox.pos.y + player.hitbox.dim.y/2) };
 					
-					if(player.weapon.timeSinceFired >= player.weapon.fireRate){
+					if(!player.isSprinting && player.weapon.timeSinceFired >= player.weapon.fireRate){
 						Bullet b({player.hitbox.pos.x + player.hitbox.dim.x/2, player.hitbox.pos.y + player.hitbox.dim.y/2}, dir, player.weapon.bulletSpeed, player.weapon.bulletDistance, player.weapon.damage); //use weapon speed once weapon class is implemented
 						bullets.push_back(b);
 						player.weapon.timeSinceFired = 0;
@@ -135,16 +149,6 @@ void GAME(SDL_Window* window, SDL_Renderer* rend){
 		SDL_PumpEvents(); 
 		const Uint8* keys = SDL_GetKeyboardState(0); 
 
-		//movement (normalised)
-		bool isSprinting = keys[SDL_GetScancodeFromKey(player.binds.sprint)];
-		double speed = player.moveSpeed * (isSprinting ? player.sprintMulti : 1);
-		
-		double playerXmov = (keys[SDL_GetScancodeFromKey(player.binds.left)] ? -1 : 0) + (keys[SDL_GetScancodeFromKey(player.binds.right)] ? 1 : 0);
-		double playerYmov = (keys[SDL_GetScancodeFromKey(player.binds.up)] ? -1 : 0) + (keys[SDL_GetScancodeFromKey(player.binds.down)] ? 1 : 0);
-		double playerMovMagnitude = abs(sqrt(playerXmov * playerXmov + playerYmov * playerYmov)); //pythagoras
-		player.hitbox.vel.x = playerXmov * speed / ((playerMovMagnitude > 0.0f) ? playerMovMagnitude : 1);
-		player.hitbox.vel.y = playerYmov * speed / ((playerMovMagnitude > 0.0f) ? playerMovMagnitude : 1);
-		
 		//interact
 		if (keys[SDL_GetScancodeFromKey(player.binds.interact)] && interactDelay <= 0){
 			interactDelay = 100.0f;
@@ -164,41 +168,50 @@ void GAME(SDL_Window* window, SDL_Renderer* rend){
 
 			if (shortestDistance < player.doorInteractDist) {
 
-				if (closest.isVictory) return; //win the game
-
-				//figure out which direction to move player
-				CardinalBool moveDirection;
-				if (closest.facing == _NORTH) {
-					rIndex.r+=1; //player moves south
-					moveDirection = _SOUTH;
+				if (closest.isVictory) {
+					if(levelCount <= 7){
+						bullets.clear();
+						generate_new_level(level, colliders, currentRoom, player, levelCount);
+					}
+					else{
+						return levelCount; //win the game
+					}
 				}
-				else if (closest.facing == _EAST) {
-					rIndex.c-=1; //player moves west
-					moveDirection = _WEST;
-				}
-				else if (closest.facing == _SOUTH) {
-					rIndex.r-=1; //player moves north
-					moveDirection = _NORTH;
-				}
-				else if (closest.facing == _WEST) {
-					rIndex.c+=1; //player moves east
-					moveDirection = _EAST;
-				}
-				//change room
-				currentRoom = level.get_room(rIndex.r, rIndex.c);
-				reload_colliders(colliders, currentRoom, player);
-				bullets.clear();
-				//set player position
-				for (Door d : currentRoom->doors) {
-					if (d.facing == moveDirection) {
-						player.hitbox.pos = d.spawnPoint;
+				else{
+					//figure out which direction to move player
+					CardinalBool moveDirection;
+					if (closest.facing == _NORTH) {
+						rIndex.r+=1; //player moves south
+						moveDirection = _SOUTH;
+					}
+					else if (closest.facing == _EAST) {
+						rIndex.c-=1; //player moves west
+						moveDirection = _WEST;
+					}
+					else if (closest.facing == _SOUTH) {
+						rIndex.r-=1; //player moves north
+						moveDirection = _NORTH;
+					}
+					else if (closest.facing == _WEST) {
+						rIndex.c+=1; //player moves east
+						moveDirection = _EAST;
+					}
+					//change room
+					currentRoom = level.get_room(rIndex.r, rIndex.c);
+					reload_colliders(colliders, currentRoom, player);
+					bullets.clear();
+					//set player position
+					for (Door d : currentRoom->doors) {
+						if (d.facing == moveDirection) {
+							player.hitbox.pos = d.spawnPoint;
+						}
 					}
 				}
 			}
 		}
 
 		
-		
+		//camera movement
 		camera.set_pos(player.hitbox.pos.x + player.hitbox.dim.x/2, player.hitbox.pos.y + player.hitbox.dim.y/2);
 		//keep texture within the bounds of the game view
 		SDL_Point texDim;
@@ -208,9 +221,22 @@ void GAME(SDL_Window* window, SDL_Renderer* rend){
 		if(camera.y - camera.view.h/2 < 0) camera.set_pos(camera.x, camera.view.h/2);
 		if(camera.y + camera.view.h/2 > texDim.y) camera.set_pos(camera.x, texDim.y - camera.view.h/2);
 		
-		/*--COLLISION--*/
+		/*--COLLISION AND MOVEMENT--*/
 		std::vector<int> enemiesToDelete; //used to remove from vectors AFTER iterating over them, to prevent segfaults
 		std::vector<int> bulletsToDelete;
+		std::vector<int> collidersToDelete;
+		
+		//player movement (normalised)
+		player.isSprinting = keys[SDL_GetScancodeFromKey(player.binds.sprint)];
+		double speed = player.moveSpeed * (player.isSprinting ? player.sprintMulti : 1);
+		if (player.isSprinting){ //prevent player from shooting a moment after sprinting
+			player.weapon.timeSinceFired = -35;
+		}
+		double playerXmov = (keys[SDL_GetScancodeFromKey(player.binds.left)] ? -1 : 0) + (keys[SDL_GetScancodeFromKey(player.binds.right)] ? 1 : 0);
+		double playerYmov = (keys[SDL_GetScancodeFromKey(player.binds.up)] ? -1 : 0) + (keys[SDL_GetScancodeFromKey(player.binds.down)] ? 1 : 0);
+		double playerMovMagnitude = abs(sqrt(playerXmov * playerXmov + playerYmov * playerYmov)); //pythagoras
+		player.hitbox.vel.x = playerXmov * speed / ((playerMovMagnitude > 0.0f) ? playerMovMagnitude : 1);
+		player.hitbox.vel.y = playerYmov * speed / ((playerMovMagnitude > 0.0f) ? playerMovMagnitude : 1);
 		
 		//bullets movement
 		for(Uint64 i = 0; i < bullets.size(); i++){
@@ -220,11 +246,41 @@ void GAME(SDL_Window* window, SDL_Renderer* rend){
 			
 		}
 
+		//enemy movement and AI
+		for (Uint64 i = 0; i < currentRoom->enemies.size(); i++){
+			Enemy& e = currentRoom->enemies[i];
+			e.timeSinceAttack += deltaTime;
+			if (abs(calc_distance(e.hitbox.pos, player.hitbox.pos)) < e.detectionDistance){
+
+				if(e.timeSinceAttack >= e.attackRate){
+					e.moveTarget = player.hitbox.pos;
+					e.hitbox.vel = normalize({e.moveTarget.x - e.hitbox.pos.x, e.moveTarget.y - e.hitbox.pos.y});
+					e.hitbox.vel.x *= e.moveSpeed;
+					e.hitbox.vel.y *= e.moveSpeed;
+				}
+				else{
+					e.hitbox.vel = {0, 0};
+				}
+			}
+			else{
+				e.hitbox.vel = {0, 0};
+			}
+			/*
+			if(abs(e.hitbox.pos.x - e.moveTarget.x) < 5 && abs(e.hitbox.pos.y - e.moveTarget.y) < 5 || e.moveTarget.x < 100 && e.moveTarget.y < 100){
+				e.moveTarget = {e.hitbox.pos.x + sin(e.hitbox.pos.x), e.hitbox.pos.y + sin(e.hitbox.pos.y)};
+			}
+			*/
+			
+		}
+		
+		enemiesToDelete.clear();
+		collidersToDelete.clear();
+		//move dynamic colliders appropriately
 		for(Uint64 i = 0; i < colliders.size(); i++){
 			if(colliders[i]->isActive && colliders[i]->isDynamic){
 				std::vector<SortingData> contacts; //check "Collision.h" for SortingData definition
 				for(Uint64 n = 0; n < colliders.size(); n++){
-					if(colliders[n]->isActive && n != i){
+					if(colliders[n]->isActive && !colliders[n]->isDynamic && n != i){
 						RaycastData data = check_dynamic_collision(colliders[i], colliders[n]);
 						if(data.contact){
 							SortingData d = {(int)n, data.contactTime};
@@ -249,40 +305,43 @@ void GAME(SDL_Window* window, SDL_Renderer* rend){
 				colliders[i]->pos.y += colliders[i]->vel.y * deltaTime;
 			}
 			
+			//bullets hit enemies
 			bulletsToDelete.clear();
-			for (Uint64 x = 0; x < bullets.size(); x++) {//player is always first collider so skip
-				if (bullets[x].distanceTravelled >= bullets[x].maxDistance || colliders[i]->world_ID != player.hitbox.world_ID && check_point(bullets[x].pos, colliders[i])){
+			for (Uint64 x = 0; x < bullets.size(); x++) {
+				if(bullets[x].distanceTravelled >= bullets[x].maxDistance){
+					bulletsToDelete.push_back(x);
+				}
+				else if (colliders[i]->isActive && colliders[i]->world_ID != player.hitbox.world_ID && check_point(bullets[x].pos, colliders[i])){
+					for(Uint64 y = 0; y < currentRoom->enemies.size(); y++){
+						if(currentRoom->enemies[y].hitbox.world_ID == colliders[i]->world_ID){ //if the hit collider belongs to an enemy, reduce the enemy's HP
+							currentRoom->enemies[y].HP -= bullets[x].damage;
+							if (currentRoom->enemies[y].HP <= 0){
+								currentRoom->enemies[y].hitbox.isActive = false;
+							}
+						}
+					}
 					bulletsToDelete.push_back(x);
 				}
 			}
-			
+
 			for (Uint64 i = 0; i < bulletsToDelete.size(); i++){
 				bullets.erase(bullets.begin() + bulletsToDelete[i]);
 			}
-		}
-		
-		
-	
-		//bullets hit enemies
-		enemiesToDelete.clear();
-		bulletsToDelete.clear();
-		for (Uint64 x = 0; x < currentRoom->enemies.size(); x++){
-			for (Uint64 y = 0; y < bullets.size(); y++){
-				if (check_point(bullets[y].pos, &currentRoom->enemies[x].hitbox)){
-					currentRoom->enemies[x].HP -= bullets[y].damage;
-					bulletsToDelete.push_back(y);
-					if (currentRoom->enemies[x].HP <= 0){
-						enemiesToDelete.push_back(x);
-						break; //next enemy. this one is already dead
-					}
+			
+			//enemy attacks player
+			for (Uint64 i = 0; i < currentRoom->enemies.size(); i++){
+				Enemy& e = currentRoom->enemies[i];
+				if(e.hitbox.isActive && e.timeSinceAttack >= e.attackRate && check_overlap(&e.hitbox, &player.hitbox)){
+					player.health -= 1;
+					Vec2 directionFromPlayer = normalize({e.hitbox.pos.x - player.hitbox.pos.x, e.hitbox.pos.y - player.hitbox.pos.y});
+					e.hitbox.pos.x += directionFromPlayer.x * 20;
+					e.hitbox.pos.y += directionFromPlayer.y * 20;
+					e.timeSinceAttack = 0;
 				}
 			}
 		}
-		for (Uint64 i = 0; i < bulletsToDelete.size(); i++){
-			bullets.erase(bullets.begin() + bulletsToDelete[i]);
-		}
-		for (Uint64 i = 0; i < enemiesToDelete.size(); i++){
-			currentRoom->enemies.erase(currentRoom->enemies.begin() + enemiesToDelete[i]);
+		if (player.health <= 0){
+			return levelCount;
 		}
 		
 		/*--RENDER--*/
@@ -303,18 +362,24 @@ void GAME(SDL_Window* window, SDL_Renderer* rend){
 		SDL_DestroyTexture(setTex);
 
 		SDL_Texture* dungeonMiscTex = SDL_CreateTextureFromSurface(rend, dungeonMisc.atlas);
+		
+		//enemies
+		for (Enemy en : currentRoom->enemies) {
+			SDL_Rect enemyRect = collider_to_rect(en.hitbox);
+			SDL_Rect enemySrc = {0, 0, 0, 0};
+			if(en.HP <= 0){
+				enemySrc = dungeonMisc.get_tile({ 13, 0 });
+			}
+			else{
+				enemySrc = dungeonMisc.get_tile({ 12, 0 });
+			}
+			SDL_RenderCopy(rend, dungeonMiscTex, &enemySrc, &enemyRect);
+		}
+		
 		//player
 		SDL_Rect playerRect = collider_to_rect(player.hitbox);
 		SDL_Rect playerSrc = dungeonMisc.get_tile({14, 6});
 		SDL_RenderCopy(rend, dungeonMiscTex, &playerSrc, &playerRect);
-		
-
-		//enemies
-		for (Enemy en : currentRoom->enemies) {
-			SDL_Rect enemyRect = collider_to_rect(en.hitbox);
-			SDL_Rect enemySrc = dungeonMisc.get_tile({ 12, 0 });
-			SDL_RenderCopy(rend, dungeonMiscTex, &enemySrc, &enemyRect);
-		}
 		
 		///*
 		//bullets
@@ -339,7 +404,7 @@ void GAME(SDL_Window* window, SDL_Renderer* rend){
 				}
 			}
 			SDL_SetRenderDrawColor(rend, 255, 0, 0, 255);
-			SDL_RenderDrawLine(rend, player.hitbox.pos.x, player.hitbox.pos.y, mouseWorldPos.x, mouseWorldPos.y);
+			SDL_RenderDrawLine(rend, player.hitbox.pos.x + player.hitbox.dim.x/2, player.hitbox.pos.y + player.hitbox.dim.y/2, mouseWorldPos.x, mouseWorldPos.y);
 			SDL_SetRenderDrawBlendMode(rend, SDL_BLENDMODE_NONE);
 		}
 		
@@ -359,7 +424,7 @@ void GAME(SDL_Window* window, SDL_Renderer* rend){
 	SDL_DestroyWindow(window);
 	IMG_Quit();
 	SDL_Quit();
-	return;
+	return levelCount;
 }
 
 int main(int argc, char** argv){
@@ -376,7 +441,8 @@ int main(int argc, char** argv){
 		return 0;
 	}
 	
-	GAME(window, rend);
+	int count = GAME(window, rend);
+	std::cout << "you made it to level " << count << std::endl;
 	std::cout << "finishing game" << std::endl;
 	return 0;
 }
