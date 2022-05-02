@@ -11,6 +11,7 @@ Level::Level(){
 
 void Level::generate_level(){
 	rooms.clear();
+	std::random_device generator;
 	
 	//set all squares to -1
 	for (int x = 0; x < LEVELMAP_SIZE; x++){
@@ -21,9 +22,9 @@ void Level::generate_level(){
 	
 	//probability weights
     int door1 = 15;
-    int door2 = 45;
-    int door3 = 15;
-    int door4 = 1;    
+    int door2 = 25;
+    int door3 = 45;
+    int door4 = 10;    
 
     std::queue<Index2> queue;
     Index2 i = {LEVELMAP_SIZE/2,LEVELMAP_SIZE/2}; //start making rooms at the center
@@ -131,21 +132,8 @@ void Level::generate_level(){
         if (next.W) queue.push({i.r, i.c-1});
     }
 	
-	//PRINT MAP
-    for (int x = 0; x < 16; x++){
-        for (int y = 0; y < 16; y++){
-            if (map[x][y] == _EMPTY) std::cout << "[----]";
-            else std::cout << "[" << map[x][y].N << map[x][y].E << map[x][y].S << map[x][y].W << "]";
-			//if (map[x][y] == _EMPTY) std::cout << "-";
-            //else std::cout << "#";
-        }
-        std::cout << "\n";
-    }
-	
-	//generate rooms
 	bool placedVictoryDoor = false;
-	int index = 0;
-	std::random_device generator;
+	//DETERMINE VICTORY ROOM
 	Index2 victoryRoom = {0, 0};
 	std::uniform_int_distribution<int> randomRoomNumber(0, 15);
 	victoryRoom.r = randomRoomNumber(generator);
@@ -154,16 +142,81 @@ void Level::generate_level(){
 		if (map[victoryRoom.r][victoryRoom.c] != _EMPTY){
 			placedVictoryDoor = true;
 		}
-		else if(victoryRoom.c == LEVELMAP_SIZE){
-			victoryRoom.c = 0;
-			victoryRoom.r += 1;
-			victoryRoom.r %= LEVELMAP_SIZE;
-		}
 		else{
 			victoryRoom.c += 1;
+			if(victoryRoom.c == LEVELMAP_SIZE){
+				victoryRoom.c = 0;
+				victoryRoom.r += 1;
+				victoryRoom.r %= LEVELMAP_SIZE;
+			}
 		}
 	}
 	std::cout << "victory room is located at " << victoryRoom.r << "|" << victoryRoom.c << std::endl;
+
+	bool setPlayerSpawn = false;
+	//DETERMINE SPAWN ROOM
+	//spawnRoom is class attribute
+	spawnRoom.r = randomRoomNumber(generator);
+	spawnRoom.c = randomRoomNumber(generator);
+	while (!setPlayerSpawn){
+		if (map[spawnRoom.r][spawnRoom.c] != _EMPTY){
+			setPlayerSpawn = true;
+		}
+		else{
+			spawnRoom.c += 1;
+			if(spawnRoom.c == LEVELMAP_SIZE){
+				spawnRoom.c = 0;
+				spawnRoom.r += 1;
+				spawnRoom.r %= LEVELMAP_SIZE;
+			}
+		}
+	}
+	std::cout << "spawn room is located at " << spawnRoom.r << "|" << spawnRoom.c << std::endl;
+
+	//GENERATE MINIMAP TEXTURE
+	minimap = SDL_CreateRGBSurface(0,LEVELMAP_SIZE*5,LEVELMAP_SIZE*5,32,0,0,0,0);
+	SDL_Rect roomRect = {1, 1, 3, 3};
+	SDL_Rect doorwayRect = {1, 1, 1, 1};
+	Uint32 colour = 0xFFFFFF;
+	for (int x = 0; x < 16; x++){
+        for (int y = 0; y < 16; y++){
+			colour = (x == victoryRoom.r && y == victoryRoom.c) ? 0xFFFF00 : 0xFFFFFF;
+			colour = (x == spawnRoom.r && y == spawnRoom.c) ? 0x00AAFF : colour;
+			if (map[x][y] != _EMPTY){
+				SDL_FillRect(minimap, &roomRect, colour);
+				if(map[x][y].N){
+					doorwayRect.x = roomRect.x + 1;
+					doorwayRect.y = roomRect.y - 1;
+					SDL_FillRect(minimap, &doorwayRect, colour);
+				}
+				if(map[x][y].E){
+					doorwayRect.x = roomRect.x + 3;
+					doorwayRect.y = roomRect.y + 1;
+					SDL_FillRect(minimap, &doorwayRect, colour);
+				}
+				if(map[x][y].S){
+					doorwayRect.x = roomRect.x + 1;
+					doorwayRect.y = roomRect.y + 3;
+					SDL_FillRect(minimap, &doorwayRect, colour);
+				}
+				if(map[x][y].W){
+					doorwayRect.x = roomRect.x - 1;
+					doorwayRect.y = roomRect.y + 1;
+					SDL_FillRect(minimap, &doorwayRect, colour);
+				}
+			}
+			else{
+				SDL_FillRect(minimap, &roomRect, 0x331111);
+			}
+			roomRect.x += 5;
+		}
+		roomRect.x = 1;
+		roomRect.y += 5;
+	}
+	
+	//generate rooms
+	int index = 0;
+	
 	std::uniform_int_distribution<int> distribution(1, 2);
 	for (int r = 0; r < LEVELMAP_SIZE; r++){
 		for (int c = 0; c < LEVELMAP_SIZE; c++){

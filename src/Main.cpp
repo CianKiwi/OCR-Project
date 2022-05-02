@@ -15,13 +15,14 @@
 #include "Structs.h"
 #include "Bullet.h"
 
-#define WINDOW_X 1280
-#define WINDOW_Y 720
+#define WINDOW_X 1920
+#define WINDOW_Y 1080
 
 SDL_Window* window;
 SDL_Renderer* rend;
 
 bool DEBUG = false;
+bool SHOW_MINIMAP = false;
 int MAX_WORLD_ID = 0;
 
 SDL_Rect collider_to_rect(const Collider& c){
@@ -61,7 +62,7 @@ int GAME(SDL_Window* window, SDL_Renderer* rend){
 	int levelCount = 1;
 	
 	//room stuff
-	Index2 rIndex = {8,8};
+	Index2 rIndex = {level.spawnRoom.r, level.spawnRoom.c};
 	Tileset dungeonSet("tex/myTestTileset.png", 16, 16);
 	currentRoom = level.get_room(rIndex.r, rIndex.c);
 	
@@ -118,16 +119,20 @@ int GAME(SDL_Window* window, SDL_Renderer* rend){
 						std::cout << "CURRENT ROOM: " << rIndex.r << "|" << rIndex.c << std::endl;
 						break;
 					case SDLK_p:
-						//go to next level
+						//reload current level
 						bullets.clear();
 						level.generate_level();
-						rIndex = {8, 8};
+						rIndex = {level.spawnRoom.r, level.spawnRoom.c};
 						currentRoom = level.get_room(rIndex.r, rIndex.c);
 						bullets.clear();
 						reload_colliders(colliders, currentRoom, player);
-						levelCount++;
+						break;
 					case SDLK_o:
 						player.health = 100;
+						break;
+					case SDLK_m:
+						SHOW_MINIMAP = !SHOW_MINIMAP;
+						break;
 				}
 			}
 			///*
@@ -175,7 +180,7 @@ int GAME(SDL_Window* window, SDL_Renderer* rend){
 					if(levelCount <= 7){
 						bullets.clear();
 						level.generate_level();
-						rIndex = {8, 8};
+						rIndex = {level.spawnRoom.r, level.spawnRoom.c};
 						currentRoom = level.get_room(rIndex.r, rIndex.c);
 						bullets.clear();
 						reload_colliders(colliders, currentRoom, player);
@@ -401,27 +406,16 @@ int GAME(SDL_Window* window, SDL_Renderer* rend){
 			}
 		SDL_RenderCopy(rend, dungeonMiscTex, &playerSrc, &playerRect);
 		SDL_SetTextureColorMod(dungeonMiscTex, 255, 255, 255);
-		///*
+
 		//bullets
 		for (Bullet b : bullets) {
 			SDL_Rect bulletRect = {b.pos.x-3, b.pos.y-3, 6, 6};
 			SDL_SetRenderDrawColor(rend, 235, 235, 255, 255);
 			SDL_RenderFillRect(rend, &bulletRect);
 		}
-		//*/
-		
-		//health bar
-		SDL_Rect heartRect = {camera.view.x + 10, camera.view.y + 10, 40, 40};
-		SDL_Rect heartSrc = dungeonMisc.get_tile({13, 6});
-		for(int x = 0; x < player.health; x++){
-			SDL_RenderCopy(rend, dungeonMiscTex, &heartSrc, &heartRect);
-			heartRect.x += heartRect.w;
-		}
-		
-		SDL_DestroyTexture(dungeonMiscTex);
 		
 		//debug
-		//always do last
+		//do last, but before UI
 		if(DEBUG){
 			SDL_SetRenderDrawBlendMode(rend, SDL_BLENDMODE_BLEND);
 			for(Uint64 i = 0; i < colliders.size(); i++){
@@ -436,6 +430,23 @@ int GAME(SDL_Window* window, SDL_Renderer* rend){
 			SDL_SetRenderDrawBlendMode(rend, SDL_BLENDMODE_NONE);
 		}
 		
+		//health bar
+		SDL_Rect heartRect = {camera.view.x + 10, camera.view.y + 10, 40, 40};
+		SDL_Rect heartSrc = dungeonMisc.get_tile({13, 6});
+		for(int x = 0; x < player.health; x++){
+			SDL_RenderCopy(rend, dungeonMiscTex, &heartSrc, &heartRect);
+			heartRect.x += heartRect.w;
+		}
+		
+		//minimap
+		SDL_Rect minimapRect = {camera.view.x + camera.view.w - camera.view.h/1.5f, camera.view.y + camera.view.h/3, camera.view.h/1.5f, camera.view.h/1.5f};
+		SDL_Texture* minimapTex = SDL_CreateTextureFromSurface(rend, level.minimap);
+		if(SHOW_MINIMAP){
+			SDL_RenderCopy(rend, minimapTex, 0, &minimapRect);
+		}
+		
+		SDL_DestroyTexture(minimapTex);
+		SDL_DestroyTexture(dungeonMiscTex);
 		SDL_RenderPresent(rend);
 		
 		//render to window
@@ -462,7 +473,8 @@ int main(int argc, char** argv){
 	std::cout << "setting up required data" << std::endl;
 	SDL_Init(SDL_INIT_VIDEO);
 	IMG_Init(IMG_INIT_JPG|IMG_INIT_PNG);
-	window = SDL_CreateWindow("H446 GAME", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_X, WINDOW_Y, 0);
+	window = SDL_CreateWindow("H446 GAME", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_X, WINDOW_Y, SDL_WINDOW_FULLSCREEN_DESKTOP);
+	
 	rend = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 	if(!window || !rend){
 		std::cout << "error creating window or renderer" << std::endl;
