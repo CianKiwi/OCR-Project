@@ -1,6 +1,16 @@
 #include "Level.h"
 
 Level::Level(){
+	//set all squares to -1
+	for (int x = 0; x < LEVELMAP_SIZE; x++){
+		for (int y = 0; y < LEVELMAP_SIZE; y++){
+			levelMap[x][y] = -1;
+		}
+	}
+}
+
+void Level::generate_level(){
+	rooms.clear();
 	
 	//set all squares to -1
 	for (int x = 0; x < LEVELMAP_SIZE; x++){
@@ -136,6 +146,24 @@ Level::Level(){
 	bool placedVictoryDoor = false;
 	int index = 0;
 	std::random_device generator;
+	Index2 victoryRoom = {0, 0};
+	std::uniform_int_distribution<int> randomRoomNumber(0, 15);
+	victoryRoom.r = randomRoomNumber(generator);
+	victoryRoom.c = randomRoomNumber(generator);
+	while (!placedVictoryDoor){
+		if (map[victoryRoom.r][victoryRoom.c] != _EMPTY){
+			placedVictoryDoor = true;
+		}
+		else if(victoryRoom.c == LEVELMAP_SIZE){
+			victoryRoom.c = 0;
+			victoryRoom.r += 1;
+			victoryRoom.r %= LEVELMAP_SIZE;
+		}
+		else{
+			victoryRoom.c += 1;
+		}
+	}
+	std::cout << "victory room is located at " << victoryRoom.r << "|" << victoryRoom.c << std::endl;
 	std::uniform_int_distribution<int> distribution(1, 2);
 	for (int r = 0; r < LEVELMAP_SIZE; r++){
 		for (int c = 0; c < LEVELMAP_SIZE; c++){
@@ -153,12 +181,7 @@ Level::Level(){
 					std::cout << map[r][c].data[x];
 				}
 				std::cout << "  " << filename << std::endl;
-				Room room(filename.c_str(), !placedVictoryDoor);
-				//place one door in the level as victory door
-				if (!placedVictoryDoor) {
-					std::cout << "victory door in room " << r << "|" << c << std::endl;
-					placedVictoryDoor = true;
-				}
+				Room room(filename.c_str(), (r == victoryRoom.r && c == victoryRoom.c));
 				rooms.push_back(room);
 				levelMap[r][c] = index;
 				index++;

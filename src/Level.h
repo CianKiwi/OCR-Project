@@ -15,5 +15,6 @@ public:
 	std::vector<Room> rooms;
 	int levelMap[LEVELMAP_SIZE][LEVELMAP_SIZE];
 	Level();
+	void generate_level();
 	Room* get_room(int r, int c);
 };

@@ -6,18 +6,18 @@ Room::Room(){
 Room::Room(const char* source, bool isVictory){
 	std::ifstream srcFile(source, std::ifstream::in);
 	/*--NOTE: THIS METHOD OF IMPLEMENTING TILEMAPS IS ARBITRARY--*/
-	tilemap.indices.push_back({1,0}); //wall
-	tilemap.indices.push_back({1,1}); //floor
-	tilemap.indices.push_back({1,2}); //door
-	tilemap.indices.push_back({0,1}); //empty
-	tilemap.indices.push_back({1,3}); //victory door
+									  //empty is 0
+	tilemap.indices.push_back({1,0}); //wall 1
+	tilemap.indices.push_back({1,1}); //floor 2
+	tilemap.indices.push_back({1,2}); //door 3
+	tilemap.indices.push_back({1,3}); //victory door 4
+	tilemap.indices.push_back({0,1}); //indented floor 5
 	char c;
 	Collider w({0, 0}, {0, ROOM_TILE_SIZE}, true, false, false);
 	Collider eHitbox({ 0,0 }, { 48, 48 }, true, true, false);
 	Enemy enemy(eHitbox, 3);
 	Door d;
 	int mapX = 0, mapY = 0;
-	bool placedVictoryDoor = false;
 	
 	for (int x = 0; x < TILEMAP_SIZE; x++){
 		for (int y = 0; y < TILEMAP_SIZE; y++){
@@ -104,15 +104,8 @@ Room::Room(const char* source, bool isVictory){
 					d.spawnPoint = {w.pos.x + ROOM_TILE_SIZE + 16, w.pos.y + 8};
 					d.facing = _EAST;
 				}
-				if (isVictory && !placedVictoryDoor){
-					d.isVictory = true;
-					tilemap.map[mapX][mapY] = 5;
-					placedVictoryDoor = true;
-				}
-				else{
-					d.isVictory = false;
-					tilemap.map[mapX][mapY] = 3;
-				}
+				d.isVictory = false;
+				tilemap.map[mapX][mapY] = 3;
 				
 				doors.push_back(d);
 				//reset collider
@@ -133,6 +126,46 @@ Room::Room(const char* source, bool isVictory){
 				else{
 					w.pos.x += ROOM_TILE_SIZE;
 				}
+				tilemap.map[mapX][mapY] = 2;
+				mapX++;
+				break;
+			case 'V':
+				//floor (and other characters)
+
+				if (w.dim.x > 0){
+					//append wall
+					walls.push_back(w);
+					//reset collider
+					w.pos.x += w.dim.x + ROOM_TILE_SIZE;
+					w.dim.x = 0;
+				}
+				else{
+					w.pos.x += ROOM_TILE_SIZE;
+				}
+				if(isVictory){
+					d.position = w.pos;
+					d.isVictory = true;
+					doors.push_back(d);
+					tilemap.map[mapX][mapY] = 4;
+				}
+				else{
+					tilemap.map[mapX][mapY] = 5;
+				}
+				mapX++;
+				break;
+			case 'P':
+				//floor (and other characters)
+				if (w.dim.x > 0){
+					//append wall
+					walls.push_back(w);
+					//reset collider
+					w.pos.x += w.dim.x + ROOM_TILE_SIZE;
+					w.dim.x = 0;
+				}
+				else{
+					w.pos.x += ROOM_TILE_SIZE;
+				}
+				playerSpawn = { w.pos.x - 56, w.pos.y + 8 };
 				tilemap.map[mapX][mapY] = 2;
 				mapX++;
 				break;

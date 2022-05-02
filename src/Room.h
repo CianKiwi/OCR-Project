@@ -24,6 +24,8 @@ public:
 	std::vector<Collider> walls;
 	std::vector<Door> doors;
 	std::vector<Enemy> enemies;
+	Vec2 playerSpawn = {70, 70};
+	Vec2 maxCoords = {ROOM_TILE_SIZE, ROOM_TILE_SIZE};
 	Tilemap tilemap;
 	
 	Room(const char* source, bool isVictory);

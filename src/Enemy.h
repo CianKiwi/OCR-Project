@@ -12,6 +12,7 @@ public:
 	double detectionDistance = 350;
 	double attackRate = 100;
 	double timeSinceAttack = 0;
+	double holdDamageFramesFor = 0;
 	Vec2 moveTarget;
 	
 	Enemy(Collider i_hitbox, int health);

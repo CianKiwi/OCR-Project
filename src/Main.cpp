@@ -44,15 +44,7 @@ void reload_colliders(std::vector<Collider*>& colliders, Room* room, Player& pla
 		colliders[x]->world_ID = MAX_WORLD_ID+1;
 		MAX_WORLD_ID++;
 	}
-}
-
-void generate_new_level(Level& level, std::vector<Collider*>& colliders, Room*& room, Player& player, int& levelCount){
-	level = Level();
-	room = level.get_room(8, 8);
-	reload_colliders(colliders, room, player);
-	player.hitbox.pos = {70, 70};
-	levelCount++;
-	
+	player.hitbox.pos = room->playerSpawn;
 }
 
 int GAME(SDL_Window* window, SDL_Renderer* rend){
@@ -65,21 +57,24 @@ int GAME(SDL_Window* window, SDL_Renderer* rend){
 	std::vector<Bullet> bullets;
 	Room* currentRoom;
 	Level level; //automatically generates a level
+	level.generate_level();
 	int levelCount = 1;
-	//player stuff
-	Collider hitbox({0, 0}, {32, 48}, true, true, false);
-	Keybinds keys{SDLK_w, SDLK_s, SDLK_a, SDLK_d, SDLK_q, SDLK_LSHIFT};
-	Camera camera(0, 0, 800, 450);
-	Tileset dungeonMisc("tex/DungeonTilesetMisc.png", 16, 16);
-	Weapon weapon("default weapon", 3, 15, 345, 10); //damage, fireRate, distance, speed
-	Player player(hitbox, keys, weapon, 2.5f);
-	player.hitbox.pos = {70, 70};
-	camera.set_pos(player.hitbox.pos.x + player.hitbox.dim.x/2, player.hitbox.pos.y + player.hitbox.dim.y);
 	
 	//room stuff
 	Index2 rIndex = {8,8};
 	Tileset dungeonSet("tex/myTestTileset.png", 16, 16);
 	currentRoom = level.get_room(rIndex.r, rIndex.c);
+	
+	//player stuff
+	Collider hitbox({0, 0}, {32, 48}, true, true, false);
+	Keybinds keys{SDLK_w, SDLK_s, SDLK_a, SDLK_d, SDLK_q, SDLK_LSHIFT};
+	Camera camera(0, 0, 800, 450);
+	Tileset dungeonMisc("tex/DungeonTilesetMisc.png", 16, 16);
+	Weapon weapon("default weapon", 1, 15, 345, 10); //damage, fireRate, distance, speed
+	Player player(hitbox, keys, weapon, 2.5f);
+	player.hitbox.pos = currentRoom->playerSpawn;
+	camera.set_pos(player.hitbox.pos.x + player.hitbox.dim.x/2, player.hitbox.pos.y + player.hitbox.dim.y);
+	
 	reload_colliders(colliders, currentRoom, player);
 	
 	//setup graphics
@@ -120,11 +115,19 @@ int GAME(SDL_Window* window, SDL_Renderer* rend){
 					case SDLK_h:
 						DEBUG = !DEBUG; //flip on or off
 						std::cout << "DEBUG: " << (DEBUG ? "ON" : "OFF") << std::endl;
+						std::cout << "CURRENT ROOM: " << rIndex.r << "|" << rIndex.c << std::endl;
 						break;
 					case SDLK_p:
 						//go to next level
 						bullets.clear();
-						generate_new_level(level, colliders, currentRoom, player, levelCount);
+						level.generate_level();
+						rIndex = {8, 8};
+						currentRoom = level.get_room(rIndex.r, rIndex.c);
+						bullets.clear();
+						reload_colliders(colliders, currentRoom, player);
+						levelCount++;
+					case SDLK_o:
+						player.health = 100;
 				}
 			}
 			///*
@@ -171,7 +174,12 @@ int GAME(SDL_Window* window, SDL_Renderer* rend){
 				if (closest.isVictory) {
 					if(levelCount <= 7){
 						bullets.clear();
-						generate_new_level(level, colliders, currentRoom, player, levelCount);
+						level.generate_level();
+						rIndex = {8, 8};
+						currentRoom = level.get_room(rIndex.r, rIndex.c);
+						bullets.clear();
+						reload_colliders(colliders, currentRoom, player);
+						levelCount++;
 					}
 					else{
 						return levelCount; //win the game
@@ -315,6 +323,7 @@ int GAME(SDL_Window* window, SDL_Renderer* rend){
 					for(Uint64 y = 0; y < currentRoom->enemies.size(); y++){
 						if(currentRoom->enemies[y].hitbox.world_ID == colliders[i]->world_ID){ //if the hit collider belongs to an enemy, reduce the enemy's HP
 							currentRoom->enemies[y].HP -= bullets[x].damage;
+							currentRoom->enemies[y].holdDamageFramesFor = 10.5f; //enemy rendered red for 150ms
 							if (currentRoom->enemies[y].HP <= 0){
 								currentRoom->enemies[y].hitbox.isActive = false;
 							}
@@ -331,8 +340,9 @@ int GAME(SDL_Window* window, SDL_Renderer* rend){
 			//enemy attacks player
 			for (Uint64 i = 0; i < currentRoom->enemies.size(); i++){
 				Enemy& e = currentRoom->enemies[i];
-				if(e.hitbox.isActive && e.timeSinceAttack >= e.attackRate && check_overlap(&e.hitbox, &player.hitbox)){
+				if(player.holdDamageFramesFor <= 0 && e.hitbox.isActive && e.timeSinceAttack >= e.attackRate && check_overlap(&e.hitbox, &player.hitbox)){
 					player.health -= 1;
+					player.holdDamageFramesFor = 45.5f;
 					Vec2 directionFromPlayer = normalize({e.hitbox.pos.x - player.hitbox.pos.x, e.hitbox.pos.y - player.hitbox.pos.y});
 					e.hitbox.pos.x += directionFromPlayer.x * 20;
 					e.hitbox.pos.y += directionFromPlayer.y * 20;
@@ -364,7 +374,8 @@ int GAME(SDL_Window* window, SDL_Renderer* rend){
 		SDL_Texture* dungeonMiscTex = SDL_CreateTextureFromSurface(rend, dungeonMisc.atlas);
 		
 		//enemies
-		for (Enemy en : currentRoom->enemies) {
+		for (Uint64 i = 0; i < currentRoom->enemies.size(); i++) {
+			Enemy& en = currentRoom->enemies[i];
 			SDL_Rect enemyRect = collider_to_rect(en.hitbox);
 			SDL_Rect enemySrc = {0, 0, 0, 0};
 			if(en.HP <= 0){
@@ -373,14 +384,23 @@ int GAME(SDL_Window* window, SDL_Renderer* rend){
 			else{
 				enemySrc = dungeonMisc.get_tile({ 12, 0 });
 			}
+			if(en.holdDamageFramesFor > 0){
+				SDL_SetTextureColorMod(dungeonMiscTex, 255, 128, 128);
+				en.holdDamageFramesFor -= deltaTime;
+			}
 			SDL_RenderCopy(rend, dungeonMiscTex, &enemySrc, &enemyRect);
+			SDL_SetTextureColorMod(dungeonMiscTex, 255, 255, 255);
 		}
 		
 		//player
 		SDL_Rect playerRect = collider_to_rect(player.hitbox);
 		SDL_Rect playerSrc = dungeonMisc.get_tile({14, 6});
+		if(player.holdDamageFramesFor > 0){
+				SDL_SetTextureColorMod(dungeonMiscTex, 255, 64, 64);
+				player.holdDamageFramesFor -= deltaTime;
+			}
 		SDL_RenderCopy(rend, dungeonMiscTex, &playerSrc, &playerRect);
-		
+		SDL_SetTextureColorMod(dungeonMiscTex, 255, 255, 255);
 		///*
 		//bullets
 		for (Bullet b : bullets) {
@@ -390,8 +410,16 @@ int GAME(SDL_Window* window, SDL_Renderer* rend){
 		}
 		//*/
 		
+		//health bar
+		SDL_Rect heartRect = {camera.view.x + 10, camera.view.y + 10, 40, 40};
+		SDL_Rect heartSrc = dungeonMisc.get_tile({13, 6});
+		for(int x = 0; x < player.health; x++){
+			SDL_RenderCopy(rend, dungeonMiscTex, &heartSrc, &heartRect);
+			heartRect.x += heartRect.w;
+		}
+		
 		SDL_DestroyTexture(dungeonMiscTex);
-
+		
 		//debug
 		//always do last
 		if(DEBUG){
