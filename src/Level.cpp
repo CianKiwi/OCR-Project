@@ -180,10 +180,13 @@ void Level::generate_level(){
 	Uint32 colour = 0xFFFFFF;
 	for (int x = 0; x < 16; x++){
         for (int y = 0; y < 16; y++){
+			//victory room is yellow, spawn room is blue, rest are white
 			colour = (x == victoryRoom.r && y == victoryRoom.c) ? 0xFFFF00 : 0xFFFFFF;
 			colour = (x == spawnRoom.r && y == spawnRoom.c) ? 0x00AAFF : colour;
 			if (map[x][y] != _EMPTY){
+				//render room as square
 				SDL_FillRect(minimap, &roomRect, colour);
+				//render doors around room
 				if(map[x][y].N){
 					doorwayRect.x = roomRect.x + 1;
 					doorwayRect.y = roomRect.y - 1;
@@ -206,6 +209,7 @@ void Level::generate_level(){
 				}
 			}
 			else{
+				//no room here
 				SDL_FillRect(minimap, &roomRect, 0x331111);
 			}
 			roomRect.x += 5;
