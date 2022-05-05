@@ -5,7 +5,12 @@ Tilemap::Tilemap(){
 }
 
 Index2 Tilemap::get_tile_indices(int x, int y){
-	return indices[map[x][y]];
+	if (map[x][y] < indices.size()){
+		return indices[map[x][y]];
+	}
+	else{
+		return {0,0};
+	}
 }
 
 Tileset::Tileset(const char* source, int i_rows, int i_cols){

@@ -27,7 +27,7 @@ RaycastData::RaycastData() {
 	contactTime = 0;
 };
 
-bool check_collision(Collider* a, Collider* b){
+bool check_overlap(Collider* a, Collider* b){
 
 	return (a->pos.x < b->pos.x + b->dim.x &&
 	a->pos.x + a->dim.x > b->pos.x &&
@@ -110,4 +110,21 @@ RaycastData check_dynamic_collision(Collider* a, Collider* b){
 	
 	data = check_ray({a->pos.x + a->dim.x/2, a->pos.y + a->dim.y/2}, {a->vel.x, a->vel.y}, &expandedCollider);
 	return data;
+}
+
+double calc_distance(Vec2 start, Vec2 end){
+	Vec2 displacement = {end.x - start.x, end.y - start.y};
+	return sqrt((displacement.y * displacement.y) + (displacement.x * displacement.x));
+}
+
+Vec2 normalize(Vec2 vec) {
+	double mag = calc_distance({ 0, 0 }, vec);
+	return Vec2({vec.x/mag, vec.y/mag});
+}
+
+bool check_point(Vec2 point, Collider* c){
+	return (point.x > c->pos.x &&
+			point.x < c->pos.x + c->dim.x &&
+			point.y > c->pos.y &&
+			point.y < c->pos.y + c->dim.y);
 }
